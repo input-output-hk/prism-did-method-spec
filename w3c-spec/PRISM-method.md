@@ -81,23 +81,18 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
 ```json
 {
     "@context": [
-      "https://www.w3.org/ns/did/v1"
+      "https://www.w3.org/ns/did/v1",
+      "https://w3id.org/security/suites/secp256k1-2019/v1"
     ],
     "id": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290",
     "verificationMethod": [
       {
-        "@context": [
-          "https://w3id.org/security/v1"
-        ],
         "id": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#authentication0",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "controller": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290",
         "publicKeyBase58": "YhRTFePT8YkNdex5yZRCidpfHRjVNEfFT1wBAhrTPe3qzoj5JWKgJUSyuScza3q4zv7XEU73gp1gwuyyZM3MMDH"
       },
       {
-        "@context": [
-          "https://w3id.org/security/v1"
-        ],
         "id": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#issuing0",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "controller": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290",
