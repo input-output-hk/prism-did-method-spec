@@ -11,7 +11,7 @@ to understand, comment on, and/or suggest future changes.
 
 The `prism` DID method defines data models and protocol rules to create, manage, and resolve Decentralized Identifiers (DIDs). The protocol is defined on top of the Cardano blockchain as its verifiable data registry, where DID's information is stored.
 
-The method is defined as a protocol, that describes operations, serialization formats, and rules. The protocol describes how to manage the lifecycle of DIDs and their associated DID documents. We will use the term `PRISM node` to refer to software that implements the protocol defined in this document. 
+The method is defined as a protocol, that describes operations, serialization formats, and rules. The protocol describes how to manage the lifecycle of DIDs and their associated DID documents. We will use the term `PRISM node` to refer to software that implements the protocol defined in this document.
 
 ## Versioning and protocol parameters
 
@@ -124,8 +124,8 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
 
 At a high level, the protocol that defines the `prism` DID method works as follows:
 - Any user can run a `PRISM node`, to self validate information; or can rely on a set of actors that run nodes on his behalf. The level of delegation of trust is a decision made by each user.
-- Any user willing to create a DID can do so without any need to interact with any `PRISM node`. The creation of a DID can be optionally announced publicly by publishing a creation operation on-chain. The action of posting an operation on-chin does require the interaction with a `PRISM node`
-- Users can update the DID documents associated with their DIDs. To do this, they need to publish respective update operations on-chain. This again requires interaction with a `PRISM node`
+- Any user willing to create a DID can do so without any need to interact with any `PRISM node`. The creation of a DID can be optionally announced publicly by publishing a creation operation on-chain. The action of posting an operation on-chain does require the interaction with a `PRISM node`
+- Users can update the DID documents associated to their DIDs. To do this, they need to publish respective update operations on-chain. This again requires interaction with a `PRISM node`
 - Deactivation of a DID can be performed in the same lines of updates, but publishing a deactivation operation
 - `PRISM nodes` read the operations published on-chain, and maintain internally the map of DIDs to the history of changes of their associated DID documents.
 - Any client can query any `PRISM node` and obtain the historical information of changes for a DID
@@ -274,13 +274,13 @@ message Service {
     string id = 1;
     string type = 2;
     repeated string service_endpoint = 3;
-    LedgerData added_on = 4; // (only present in DID resolution) The ledger details related to the event that added the service to the DID document.
-    LedgerData deleted_on = 5; // (only present in DID resolution) The ledger details related to the event that deleted the service from the DID document.
+    LedgerData added_on = 4; // (only present in DID resolution) The ledger details related to the event that added the service to the DID Document.
+    LedgerData deleted_on = 5; // (only present in DID resolution) The ledger details related to the event that deleted the service from the DID Document.
 }
 ```
 
 **Construction rules**
-Below we see the rules to construct a well formed `CreateDIDOperation`, these rules MUST be followed while creating the operation, and will be checked by `PRISM nodes`. Any construction error will make nodes ignore the operation.
+Below we see the rules to construct a well-formed `CreateDIDOperation`, these rules MUST be followed while creating the operation, and will be checked by `PRISM nodes`. Any construction error will make nodes ignore the operation.
 
 - The `did_data` field of the `CreateDIDOperation` MUST not be empty and MUST be properly constructed
 - Each element of `public_keys` and `services` fields MUST be constructed correctly
@@ -441,7 +441,7 @@ message DeactivateDIDOperation {
 
 **Construction rules**
 * The `previous_operation_hash` field MUST conform to the same rules as the `previous_operation_hash` field in `UpdateDID Operation`
-* The `id` field MUST conform to the same rules as the `id` field in `UpdateDID Operation`
+* The `id` field MUST conform the same rules as the `id` field in `UpdateDID Operation`
 
 **Signing and submission**
 1. Once the controller created the `DeactivateDIDOperation`, he can construct an `AtalaOperation` and sign it using the `SIGNATURE_ALGORITHM`. With that, construct a `SignedAtalaOperation` that contains the generated signature in the `signature` field; the `AtalaOperation` in the `operation` field, and the key identifier of the master key used to generate this signature in `signed_with`
@@ -534,7 +534,7 @@ The keys and services information consist of:
     - the list of types with timestamping information that declares when each type has been added or deleted.
     - the list of lists of service endpoints, each list with timestamping information that declares when the list has been added or revoked.
 
-For example, when a DID is created, an entry is added to the map, that adds the DID and maps it to the initial keys and services described in the corresponding `CrateDIDOperation`. This is:
+For example, when a DID is created, an entry is added to the map, that adds the DID and maps it to the initial keys and services described in the corresponding `CreateDIDOperation`. This is:
 - it adds the list of keys and set their timestamp indicating when they were added on, and
 - for each service it adds the singleton lists with type and list of service endpoints with a corresponding added on timestamp to each entity.
 - the hash of the `AtalaOperation` that wrapped the corresponding `CreateDIDOperation`
@@ -675,7 +675,7 @@ Given the DID `d` that a user is resolving:
             - it decodes the `AtalaOpration` from the long form DID suffix, 
             - run the validations described for a `CreateDIDOperation`
                 - if validations fail, the node will return an error
-                - if the validations are successfull, the node returns the information that would be generated in its internal map if the node would process the effect of the `CreateDIDOperation` with the difference that there would add no timestamp information (this is because the decoded operation has no associated timestamp)
+                - if the validations are successful, the node returns the information that would be generated in its internal map if the node would process the effect of the `CreateDIDOperation` with the difference that there would add no timestamp information (this is because the decoded operation has no associated timestamp)
 
 In order to transform this returned information to a DID document, we do as follows. 
 - From the list of public keys' information, extract the keys that have no revocation timestamps associated to them.
@@ -730,7 +730,7 @@ Node Service - centralised service? Who else will be able to run Prism nodes and
 
 ## References
 
-## Appendix A: Cardano's metadata encoding 
+## Appendix A: Cardano's metadata encoding
 
 [Cardano's metadata](https://developers.cardano.org/docs/transaction-metadata/) encodes a subset of JSON values.
 For the case of `prism` `AtalaObjects`, the top level value is a JSON object of the following shape:
