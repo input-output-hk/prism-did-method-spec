@@ -359,7 +359,7 @@ The model for `UpdateDIDOperation`s looks as follows:
 ```protobuf
 // Specifies the necessary data to update a public DID.
 message UpdateDIDOperation {
-    bytes previous_operation_hash = 1; // The hash of the operation that issued the DID.
+    bytes previous_operation_hash = 1; // The hash of the operation that created the DID.
     string id = 2; 
     repeated UpdateDIDAction actions = 3; // The actual updates to perform on the DID.
 }
@@ -435,7 +435,7 @@ In order to deactivate a DID, the controller can build an instance of `Deactivat
 
 ```protobuf
 message DeactivateDIDOperation {
-    bytes previous_operation_hash = 1; // The hash of the operation that issued the DID.
+    bytes previous_operation_hash = 1; // The hash of the operation that created the DID.
     string id = 2; // DID Suffix of the DID to be deactivated
 }
 ```
