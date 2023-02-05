@@ -9,20 +9,20 @@ to understand, comment on, and/or suggest future changes.
 
 ## Abstract
 
-The `prism` DID method defines data models and protocol rules to create and manage Decentralized Identifiers (DIDs). The protocol is defined on top of the Cardano blockchain as its verifiable data registry, where DID's information is stored.
+The `prism` DID method defines data models and protocol rules to create, manage, and resolve Decentralized Identifiers (DIDs). The protocol is defined on top of the Cardano blockchain as its verifiable data registry, where DID's information is stored.
 
-The method is defined as a protocol, that describes operations, serialzation formats, and rules. The protocol describes how to manage the lifecycle of DIDs and their associated DID documents. We will use the term `PRISM node` to refer to software that implements the protocol defined in this document. 
+The method is defined as a protocol, that describes operations, serialization formats, and rules. The protocol describes how to manage the lifecycle of DIDs and their associated DID documents. We will use the term `PRISM node` to refer to software that implements the protocol defined in this document. 
 
 ## Versioning and protocol parameters
 
-This document describes the first version of the `prism` DID method. Each version of the protocol defines certain parameters such us hashing algorithms, encoding functions, size limits for data, and others. Each version MAY make changes to these set of parameters. For this version, considered the first one, the protocol parameters are the following:
+This document describes the first version of the `prism` DID method. Each version of the protocol defines certain parameters such as hashing algorithms, encoding functions, size limits for data, and others. Each version MAY make changes to these set of parameters. For this version, considered the first one, the protocol parameters are the following:
 
 
 | Parameter | Description | Value |
 | -------- | -------- | -------- |
 | `SYSTEM_UPDATE_DID` | The DID that has the power to trigger a protocol update | TODO |
 | `SECURE_DEPTH` | Number of confirmations a block needs to wait to not be rollbacked with high probability. | 112 blocks |
-| `PROTOBUF_VERSION` | The version of Protol Buffers used. | 3 |
+| `PROTOBUF_VERSION` | The version of Protocol Buffers used. | 3 |
 | `CRYPTOGRAPHIC_CURVE` | Cryptographic curve used with a key. | secp256k1 |
 | `SIGNATURE_ALGORITHM` | Asymmetric public key signature algorithm. | SHA256 with ECDSA |
 | `HASH_ALGORITHM` | Algorithm for generating hashes. | SHA-256 |
@@ -37,11 +37,10 @@ The namestring that shall identify this DID `method-name` is: `prism`.
 A DID that uses this method MUST begin with the following prefix `did:prism`. The prefix MUST be in lowercase.
 
 An additional optional network specific identifier may be added as such
-- `did:prism:mainnet:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b`
 - `did:prism:testnet:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b`
 
 
-By default, if the network specific identifier is not present, then the default is `mainnet`.
+By default, if the network specific identifier is not present, then the associated network is Cardano mainnet.
 
 The remainder of the DID after the optional network identifier is specified below.
 
@@ -49,13 +48,13 @@ The remainder of the DID after the optional network identifier is specified belo
 
 ### Prism DID Method Syntax
 ```abnf
-prism-did          = "did:prism:" network-id
-network-id         = [("mainnet" / "testnet") ":"] initial-hash
-initial-hash       = 64HEXDIGIT *(":" prism-suffix)
-prism-suffix       = *( *id-char ":" ) 1*id-char
+prism-did          = "did:prism:" [network-id] initial-hash [prism-suffix]
+network-id         = "testnet" ":"
+initial-hash       = 64HEXDIGIT 
+prism-suffix       = ":" 1*id-char
 id-char            = ALPHA / DIGIT / "-" / "_" 
-
 ```
+
 ### Examples of `did:prism` Identifiers
 
 The method defines two types of DIDs. The first one represents the DIDs that have been anchored on the blockchain following the protocol rules:
@@ -68,7 +67,7 @@ The protocol also allows to create DIDs without interaction with the blockchain:
 ```abnf
 did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KPRI7CgdtYXN0ZXIwEAFKLgoJc2VjcDI1NmsxEiEDHpf-yhIns-LP3tLvA8icC5FJ1ZlBwbllPtIdNZ3q0jU
 ```
-For this case, the DID suffix adds after the hash section, the actual encoded initial state.
+For this case, the DID adds after the hash section, the actual encoded initial state.
 
 In the following sections we will describe more details about the state mentioned. 
 
@@ -125,16 +124,16 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
 
 At a high level, the protocol that defines the `prism` DID method works as follows:
 - Any user can run a `PRISM node`, to self validate information; or can rely on a set of actors that run nodes on his behalf. The level of delegation of trust is a decision made by each user.
-- Any user willing to create a DID can do so without any need to interact with any `PRISM node`. The creation of a DID can be optionally announced publicly by publishing a creation opertion on-chain. The action of posting an operation on-chin does require the interaction with a `PRISM node`
-- Users can update the DID documents associated to their DIDs. To do this, they need to publish respective update operations on-chain. This again requires interaction with a `PRISM node`
-- Deactivation of a DID can be perfomed in the same lines of updates, but publishing a deactivation operation
+- Any user willing to create a DID can do so without any need to interact with any `PRISM node`. The creation of a DID can be optionally announced publicly by publishing a creation operation on-chain. The action of posting an operation on-chin does require the interaction with a `PRISM node`
+- Users can update the DID documents associated with their DIDs. To do this, they need to publish respective update operations on-chain. This again requires interaction with a `PRISM node`
+- Deactivation of a DID can be performed in the same lines of updates, but publishing a deactivation operation
 - `PRISM nodes` read the operations published on-chain, and maintain internally the map of DIDs to the history of changes of their associated DID documents.
-- Any user can query any `PRISM node` and obtain the historical information of changes for a DID
+- Any client can query any `PRISM node` and obtain the historical information of changes for a DID
 - DID resolvers, can take the output of `PRISM nodes` and construct the current DID document associated to a DID
 
 An additional consideration is that operations can be posted on-chain in blocks, helping on the scalability side and general reduction of fees.
 
-In the following sections we will describe in details the format of operations and how to validate them.
+In the following sections we will describe in detail the format of operations and how to validate them.
 
 ## DID operations construction
 
@@ -144,7 +143,7 @@ Each operation is defined as a message, which we will describe in the next sub-s
 At a high level, operations represent actions upon DIDs (i.e. Create, Update, Deactivate). Operations are batched in `blocks`, and blocks are wrapped in `objects` that include some information about the blocks. Each object is attached to a transaction's metadata in the Cardano network. 
 Users construct these operations and submit them to the blockchain. Conversely `PRISM nodes` read Cardano transactions, examine their metadata, they extract (when present) encoded objects. The objects contains blocks, and the block contains a sequence of DID operations. `PRISM nodes` validate and interpret these operations, which allow them to build their shared global view of the map of DIDs to DID documents.
 
-Below, we present the main protobuf messages mentioned before. For purpose of making the reading simple, we moved some protobuf definitions to an Apendix at the end of this specification. We will describe for each operation how users must contruct them to be considered well valid.
+Below, we present the main protobuf messages mentioned before. For purpose of making the reading simple, we moved some protobuf definitions to an Appendix at the end of this specification. We will describe for each operation how users must construct them to be considered well valid.
 
 
 ### Block and object definitions 
@@ -176,7 +175,7 @@ message AtalaObject {
 When a user wants to perform DID operations, he:
 - Puts them in the desired order inside an `AtalaBlock`, 
 - wraps the block in an `AtalaObject`, adding the `AtalaBlock` corresponding size in bytes and count of operations in `block_byte_length` and `block_operation_count` fields respectively.
-- Encodes the `AtalaObject` inside the metadata of a Cardano transaction (see Apendix A for encoding details)
+- Encodes the `AtalaObject` inside the metadata of a Cardano transaction (see Appendix A for encoding details)
 - Sends the transaction with metadata to the Cardano blockchain
 
 ### Signed operation definition 
@@ -236,7 +235,7 @@ message PublicKey {
     string id = 1; // The key identifier within the DID Document.
     KeyUsage usage = 2; // The key's purpose.
     LedgerData added_on = 5; // (Only present during resolution) The ledger details related to the event that added the key to the DID Document.
-    LedgerData revoked_on = 6; // (Only present during resolution) The ledger details related to the event that revoked the key to the DID Document.
+    LedgerData revoked_on = 6; // (Only present during resolution) The ledger details related to the event that revoked the key from the DID Document.
 
     // The key's representation.
     oneof key_data {
@@ -275,19 +274,19 @@ message Service {
     string id = 1;
     string type = 2;
     repeated string service_endpoint = 3;
-    LedgerData added_on = 4; // (only present in DID resolution) The ledger details related to the event that added the servicein DID resolution
-    LedgerData deleted_on = 5; // (only present in DID resolution) The ledger details related to the event that revoked the service.
+    LedgerData added_on = 4; // (only present in DID resolution) The ledger details related to the event that added the service to the DID document.
+    LedgerData deleted_on = 5; // (only present in DID resolution) The ledger details related to the event that deleted the service from the DID document.
 }
 ```
 
 **Construction rules**
-Below we see the rules to consutrct a well formed `CreateDIDOperation`, these rules MUST be followed while creating the operation, and will be checked by `PRISM nodes`. Any construction error will make nodes ignore the operation.
+Below we see the rules to construct a well formed `CreateDIDOperation`, these rules MUST be followed while creating the operation, and will be checked by `PRISM nodes`. Any construction error will make nodes ignore the operation.
 
-- The `did_data` field of the `CreateDIDOperation` MUST not be empty and MUST be preperly constructed
+- The `did_data` field of the `CreateDIDOperation` MUST not be empty and MUST be properly constructed
 - Each element of `public_keys` and `services` fields MUST be constructed correctly
 - `services` can be empty. For each `Service` message in the list:
     - The fields `added_on` and `deleted_on` MUST be empty
-    - The `type` field MUST be an string. The string MUST not start nor end with withespaces, and MUST have at least a non whitespace character
+    - The `type` field MUST be a string. The string MUST not start nor end with whitespaces, and MUST have at least a non whitespace character
     - The `id` field MUST be a valid [fragment](https://www.rfc-editor.org/rfc/rfc3986#section-3.5) string in accordance to [DID URL syntax](https://www.w3.org/TR/did-core/#did-url-syntax)
     - The `service_endpoint` field MUST contain a non-empty list of URIs conforming to [RFC3986](https://www.w3.org/TR/did-core/#bib-rfc3986) and normalized according to the [Normalization and Comparison rules in RFC3986 and to any normalization](https://www.rfc-editor.org/rfc/rfc3986#section-6) rules in its applicable URI scheme specification.
 - The `public_keys` field MUST contain at least one `PublicKey` message for which its `usage` field MUST be `MASTER_KEY`
@@ -308,7 +307,7 @@ Below we see the rules to consutrct a well formed `CreateDIDOperation`, these ru
             - The `curve` MUST be the string `"secp256k1"`
             - The `x` MUST contain a valid `x` coordinate of the public key plus the extra byte indicating the sign of the `y` axis. **TODO: add encoding reference**
         
-**Signing and submition**
+**Signing and submission**
 1. Once the controller created the `CreateDIDOperation`, he can construct an `AtalaOperation` and sign it using the `SIGNATURE_ALGORITHM`. With that, construct a `SignedAtalaOperation` that contains the generated signature in the `signature` field; the `AtalaOperation` in the `operation` field, and the key identifier of the master key used to generate this signature in `signed_with`. Note that the `usage` of the key used to sign the operation MUST be `MASTER_KEY`
 2. With the `SignedAtalaOperation` the user can decide to create an `AtalaBlock` and `AtalaObject` messages, and submit a transaction himself containing the operation. Alternatively, he can gather more operations before submitting a transaction in order to save fees.
 3. Once the transaction containing the operation has a `SECURE_DEPTH` in the blockchain, then the operation will be processed by `PRISM nodes`.
@@ -325,7 +324,7 @@ To do so:
 This DID, called Long Form DID, can later be published (by posting the corresponding `CreateDIDOperation` as described in the previous section), and updated by the controller. In the meantime, the user will be able to use it without submitting anything to the blockchain.
 
 Note that each long form DID in the `prism` DID method has a unique short form associated DID. We can validate the correspondence by computing the hash of the encoded `AtalaOperation` in the long form DID, and checking its equality with the last section of the short form DID.
-Also note, that short form DID is a preffix of its corresponding long form DID. 
+Also note, that short form DID is a prefix of its corresponding long form DID. 
 
 
 ### Read DID
@@ -339,27 +338,27 @@ When a PRISM node receives a DID for resolution, it first checks if it is a shor
 If it is a short form:
 * It checks if there is information about its corresponding DID document on its database. 
   * If there is, it returns the latest state known to it. 
-  * If there is no information, the resolution returns an error
+  * If there is no information, the resolution returns the "notFound" error
 
 If the DID to resolve is in long form:
 * It extracts the short form DID from the DID
 * It validates the short form DID correspondence (i.e. the encoded operation must match the expected hash), and validates that the decoded operation is a well constructed `AtalaOperation` that contains a `CreateDIDOperation` 
-  * If the validations fail, it returns an error.
+  * If the validations fail, it returns the "invalidDid" error.
 * It then checks if there is information about the DID document corresponding to the short DID on its database. 
   * If there is, it returns the data on its database.
-  * If there is no information, it decodes the `AtalaOpration` from the long form DID suffix, and returns the corresponding DID document. See next sections to find the translation between protobuf models and DID documents.
+  * If there is no information, it decodes the `AtalaOperation` from the long form DID suffix, and returns the corresponding DID document. See next sections to find the translation between protobuf models and DID documents.
 
 
 ### Update DID 
 
-In order to update the DID document associated to a DID, the initial `CreateDIDOperation` must be already published. For the case of long form `prism` DIDs, the user can first create the corresponding `SignedAtalaOperation` for the DID creation; then, the intended update operation and finally submit both corresponding signed operations in a single transaction by gathering the two in the same `AtalaBlock`.
+In order to update the DID document associated with a DID, the initial `CreateDIDOperation` must be already published. For the case of long form `prism` DIDs, the user can first create the corresponding `SignedAtalaOperation` for the DID creation; then, the intended update operation and finally submit both corresponding signed operations in a single transaction by gathering the two in the same `AtalaBlock`.
 
 The model for `UpdateDIDOperation`s looks as follows:
 
 ```protobuf
 // Specifies the necessary data to update a public DID.
 message UpdateDIDOperation {
-    bytes previous_operation_hash = 1; // The hash of the operation that issued the DID.
+    bytes previous_operation_hash = 1; // The hash of the operation that created the DID.
     string id = 2; 
     repeated UpdateDIDAction actions = 3; // The actual updates to perform on the DID.
 }
@@ -409,7 +408,7 @@ message UpdateServiceAction {
 
 **Construction rules**
 * The `previous_operation_hash` field MUST contain the hash of the last `AtalaOperation` message that was used to successfully update the DID. This is, the hash of the `AtalaOperation` that contained the last `UpdateDIDOperation` applied or, if this is the first update, the hash of the `AtalaOperation` that contained the `CreateDIDOperation` that created the DID. The hash is obtained through the `HASHING_ALGORITHM` of the said message.
-* The `id` field MUST contain the DID suffix of the short form DID that the update operation intends to update.
+* The `id` field MUST contain the DID method-specific identifier of the short form DID that the update operation intends to update.
 - The `actions` field MUST contain a non empty list of well constructed `UpdateDIDAction`s
 - If the action is:
     - `AddKeyAction`, the `key` field MUST not be empty, and it MUST contain a well formed `PublicKey` as described in previous sections
@@ -419,7 +418,7 @@ message UpdateServiceAction {
     - `UpdateServiceAction`: 
         - the`serviceId` field MUST contain the `id` of the service to update
         - it MUST NOT be the case that both, the `type` field is empty and the `service_endpoints` field contains an empty list. This is, at least one of this field MUST be correctly populated
-        - the `type` field, if present, MUST follow the same rules of the `type` fied of the `Service` message. The `type` represents the new type (if present) that will replace the existing one.
+        - the `type` field, if present, MUST follow the same rules of the `type` field of the `Service` message. The `type` represents the new type (if present) that will replace the existing one.
         - the `service_endpoints` field, if non empty, MUST conform the same rules as the `service_endpoint` field of the `Service` message
 
 
@@ -435,14 +434,14 @@ In order to deactivate a DID, the controller can build an instance of `Deactivat
 
 ```protobuf
 message DeactivateDIDOperation {
-    bytes previous_operation_hash = 1; // The hash of the operation that issued the DID.
-    string id = 2; // DID Suffix of the DID to be deactivated
+    bytes previous_operation_hash = 1; // The hash of the operation that created the DID.
+    string id = 2; // DID method-specific identifier of the DID to be deactivated
 }
 ```
 
 **Construction rules**
-* The `previous_operation_hash` field MUST comform the same rules as the `previous_operation_hash` field in `UpdateDID Operation`
-* The `id` field MUST comform the same rules as the `id` field in `UpdateDID Operation`
+* The `previous_operation_hash` field MUST conform to the same rules as the `previous_operation_hash` field in `UpdateDID Operation`
+* The `id` field MUST conform to the same rules as the `id` field in `UpdateDID Operation`
 
 **Signing and submission**
 1. Once the controller created the `DeactivateDIDOperation`, he can construct an `AtalaOperation` and sign it using the `SIGNATURE_ALGORITHM`. With that, construct a `SignedAtalaOperation` that contains the generated signature in the `signature` field; the `AtalaOperation` in the `operation` field, and the key identifier of the master key used to generate this signature in `signed_with`
@@ -457,7 +456,7 @@ The messages associated to a protocol update are:
 ```protobuf
 // Specifies the protocol version update
 message ProtocolVersionUpdateOperation {
-    string proposer_did = 1; // The DID suffix that proposes the protocol update.
+    string proposer_did = 1; // The DID method-specific identifier that proposes the protocol update.
     ProtocolVersionInfo version = 2; // Information of the new version
 }
 
@@ -502,23 +501,23 @@ Note that `minor_version` changes inform node operators that they may be able to
 
 ## Processing of operations 
 
-Up until now, we have described the rules to construct operations. However, we haven't described how the operations are processed and interpreted by `PRIMS nodes`.
+Up until now, we have described the rules to construct operations. However, we haven't described how the operations are processed and interpreted by `PRISM nodes`.
 
 We described that operations are grouped in `blocks`, which are wrapped in `objects`, and they are submitted as part of transactions metadata. In the Cardano blockchain, transactions are added to the chain in blocks. Each Cardano block is added on top of the previous block. A transaction is added to the blockchain when a block that contains it is added to the blockchain. We say that a block gets a confirmation when a new block is added to the chain on top of it. In the same lines, we say that a transaction added to the blockchain gets a confirmation, when the block that contains the transaction receives a confirmation. 
 
-Due to the nature of blockchains, there is a probability for a block added to the chain to be rolled back, which removes the block from the chain. This probability decreases as the block receives confirmations on top of it (i.e. new blocks are added after it). It is because of this rollback probability that `PRISM nodes` only process Cardano transactions after they receive a `SECURE_DEPTH` of confirmations, making the probability of rollbacks negligeable in practical terms. Therefore, the protocol asumes a rollback free environment.
+Due to the nature of blockchains, there is a probability for a block added to the chain to be rolled back, which removes the block from the chain. This probability decreases as the block receives confirmations on top of it (i.e. new blocks are added after it). It is because of this rollback probability that `PRISM nodes` only process Cardano transactions after they receive a `SECURE_DEPTH` of confirmations, making the probability of rollbacks negligeable in practical terms. Therefore, the protocol assumes a rollback free environment.
 
 Below, we describe how `PRISM nodes` process Cardano blocks, `AtalaObject`s, `AtalaBlock`s and operations.
 
 ### Processing of Cardano blocks
 
-Once the Cardano block reaches a `SERCURE_DEPTH` of confirmations, `PRISM nodes` explore each transaction of the block in order looking for encoded `AtalaObject`s. The encoding format MUST follow the one described in Apendix A, and there MUST be only one `AtalaObject` encoded per transaction.
+Once the Cardano block reaches a `SERCURE_DEPTH` of confirmations, `PRISM nodes` explore each transaction of the block in order looking for encoded `AtalaObject`s. The encoding format MUST follow the one described in Appendix A, and there MUST be only one `AtalaObject` encoded per transaction.
 
 ### Processing of Atala objects and blocks
 
-As they evaluate confirmed transactions, nodes extract the `AtalaObject` messages from metadata (when found), and process them in the order they are found. The nodes MUST validate that `block_byte_length` and `block_operation_count` match the encoded `AtalaBlock` byte size and elements length respectively. If any validation fails, then object is ignored and no operation is processed for this object.
+As they evaluate confirmed transactions, nodes extract the `AtalaObject` messages from metadata (when found), and process them in the order they are found. The nodes MUST validate that `block_byte_length` and `block_operation_count` match the encoded `AtalaBlock` byte size and elements length respectively. If any validation fails, the object is ignored and no operation is processed for this object.
 
-Once the object is validated, each `PRISM node` will proceed to inspect the operations inside the `AtalaBlock`. Operations MUST be processed in the order they have in the `AtalaBlock`. If any operation fails validation rules, then the operation MUsT be ignored, and the nodes MUST proceed with the next operations (if any) in the `AtalaBlock`. 
+Once the object is validated, each `PRISM node` will proceed to inspect the operations inside the `AtalaBlock`. Operations MUST be processed in the order they have in the `AtalaBlock`. If any operation fails validation rules, then the operation MUST be ignored, and the nodes MUST proceed with the next operations (if any) in the `AtalaBlock`. 
 
 ### PRISM Nodes internal map
 
@@ -530,12 +529,12 @@ The map takes DIDs, and maps them to:
 
 The keys and services information consist of:
 - the list of keys associated to the DID.
-    - Each key has additional timestamps that describe when the keys were added or revoked. 
+    - Each key has additional timestamps that describe when the keys were added or deleted.
 - the services associated to the DID. For each service we also have
-    - the list of types with timestamping information that declares when each type has been added or revoked.
+    - the list of types with timestamping information that declares when each type has been added or deleted.
     - the list of lists of service endpoints, each list with timestamping information that declares when the list has been added or revoked.
 
-For example, when a DID is created, an entry is added to the map, that adds the DID and maps it to the initial keys and servicies described in the corresponding `CrateDIDOperation`. This is:
+For example, when a DID is created, an entry is added to the map, that adds the DID and maps it to the initial keys and services described in the corresponding `CrateDIDOperation`. This is:
 - it adds the list of keys and set their timestamp indicating when they were added on, and
 - for each service it adds the singleton lists with type and list of service endpoints with a corresponding added on timestamp to each entity.
 - the hash of the `AtalaOperation` that wrapped the corresponding `CreateDIDOperation`
@@ -544,9 +543,9 @@ We will describe the structure of these timestamps, and the precise effect chang
 
 #### Definition of time
 
-Each Cardano block has an associated timestamp attached to it which describes the real world time. All transactions inside a Cardano block share the same timestamp. Each `SignedAtalaOperation` is located inside an `AtalaBlock` which is attached to a Cardano transaction. We define the timestamp of an operation as the tuple _(CBT, obsn, osn)_ where
+Each Cardano block has an associated timestamp attached to it which describes the real world time. All transactions inside a Cardano block share the same timestamp. Each `SignedAtalaOperation` is located inside an `AtalaBlock` which is attached to a Cardano transaction. We define the timestamp of an operation as the tuple _(CBT, absn, osn)_ where
 - CBT is the timestamp of the Cardano block that contains the transaction that carries the operation
-- absn is the position of the Cardano transaction that carries the operation in the Cardano block
+- absn is the position of the Cardano transaction that carries the `AtalaBlock` in the Cardano block
 - osn is the position of the operation in the `AtalaBlock` that carries it
 
 every DID operation will have an associated timestamp, which `PRISM nodes` will store in their internal state while processing the operations.
@@ -579,8 +578,8 @@ Once extracted from an `AtalaBlock`, if a `PRISM node` finds a `SignedAtalaOpera
 - In the node map, the DID corresponding to the `id` of the update operation MUST have the value of `previous_operation_hash` as its associated last operation hash.
 - The update operation contains a list of update actions. 
     - `PRISM nodes` MUST process all actions in order (see details below). 
-    - If any action fails to be processed, then the entire operation MUST be ignored. This means that any previous successfull action from the list that may have been applied, MUST be rolled back 
-    - After applying the effect of all the actions of the update operation, there MUST be at least one public key associated to the updated DID in the map, that has `MASTER_KEY` as ussage and has no revocation time associated to it. If no key has this conditions, then the actions MUST be rolled back and the entire update operation is ignored.
+    - If any action fails to be processed, then the entire operation MUST be ignored. This means that any previous successful action from the list that may have been applied, MUST be rolled back 
+    - After applying the effect of all the actions of the update operation, there MUST be at least one public key associated to the updated DID in the map, that has `MASTER_KEY` as usage and has no revocation time associated to it. If no key has this conditions, then the actions MUST be rolled back and the entire update operation is ignored.
 
 Each action will affect the information in the internal map, if all the actions are applied successfully then the last operation hash MUST be updated to the hash of the `AtalaOperation` that wrapped the corresponding `UpdateDIDOperation`
 
@@ -610,20 +609,20 @@ The node updates the map, and adds to the corresponding DID the new service, att
 
 #### Process RemoveServiceAction
 
-- The `serviceId` of the action MUST already be associated to the DID to update in the map, this service MUST NOT have already an associated revocation time.
+- The `serviceId` of the action MUST already be associated to the DID to update in the map, this service MUST NOT have already an associated deletion time.
 
 **Update of internal map**
-The node updates the map, takes adds to the service of the corresponding DID, and for the currently active `type` and list of `service_endpoints` the operation timestamp as their revocation times.
+The node updates the map, and adds to the service of the corresponding DID, and for the currently active `type` and list of `service_endpoints` the operation timestamp as their deletion times.
 
 #### Process UpdateServiceAction
 
 - The `serviceId` of the action MUST already be associated to the DID to update in the map, 
-    - this service will have a list of types, there MUST be exactly one type in this list that does not have  already an associated revocation time. We will call this type `current_type`
+    - this service will have a list of types, there MUST be exactly one type in this list that does not have  already an associated deletion time. We will call this type `current_type`
     - this service will have a list of list of service endpoints, there MUST be exactly one list in this list that does not have already an associated revocation time. We will call this list `current_endpoints` 
 
 **Update of internal map**
 - If the `UpdateServiceAction` has a non empty `type`, we will refer to it as `new_type`
-    - The node adds the operation timestamp to `current_type` as its revocation time, and adds `new_type` to the corresponding list of types with the operation timestamp as its addition timestamp.
+    - The node adds the operation timestamp to `current_type` as its deletion time, and adds `new_type` to the corresponding list of types with the operation timestamp as its addition timestamp.
 - If the `UpdateServiceAction` has a non empty `service_endpoints`, we will refer to it as `new_services`
     - The node adds the operation timestamp to `current_endpoints` as its revocation time, and adds `new_endpoints` to the corresponding list of service endpoints with the operation timestamp as its addition timestamp.
 
@@ -632,14 +631,14 @@ The node updates the map, takes adds to the service of the corresponding DID, an
 
 Once extracted from an `AtalaBlock`, if a `PRISM node` finds a `SignedAtalaOperation` that contains a `DeactivateDIDOperation`, then:
 - The `SignedAtalaOperation` MUST be well constructed (as defined in previous sections)
-- The value in `signature` MUST match a signature of the operation in `operation` performed by the `signed_with` key. The key MUST be of `MASTER_KEY` usage, and present in the `public_keys` list associated to the DID to update in the node internal map. The key MUST not have a revocation timestamp associated to it.
+- The value in `signature` MUST match a signature of the operation in `operation` performed by the `signed_with` key. The key MUST be of `MASTER_KEY` usage, and present in the `public_keys` list associated to the DID to update in the node internal map. The key MUST not have a deletion timestamp associated to it.
 - In the node map, the DID corresponding to the `id` of the update operation MUST have the value of `previous_operation_hash` as its associated last operation hash.
 - If any of the above checks fail, the operation is ignored and no changes are made to the node map
 
 
 **Update of internal map**
-For all keys and services that do not have a revocation timestamp, nodes MUST set the deactivation operation timestamp as the revocation timestamp.
-The new last operation hadh MUST be the hash of the `AtalaOperation` that wrapped the corresponding `DeactivateDIDOperation`
+For all keys and services that do not have a revocation/deletion timestamp, nodes MUST set the deactivation operation timestamp as the deletion timestamp.
+The new last operation hash MUST be the hash of the `AtalaOperation` that wrapped the corresponding `DeactivateDIDOperation`
 
 Note that this makes all keys (including `MASTER_KEY` keys) revoked. Meaning that no further updates will be possible on the corresponding DID.
 
@@ -648,7 +647,7 @@ Note that this makes all keys (including `MASTER_KEY` keys) revoked. Meaning tha
 Once extracted from an `AtalaBlock`, if a `PRISM node` finds a `SignedAtalaOperation` that contains a `ProtocolVersionUpdateOperation`, then:
 - The `SignedAtalaOperation` MUST be well constructed (as defined in previous sections)
 - The value in `signature` MUST match a signature of the operation in `operation` performed by the `signed_with` key. The key MUST be of `MASTER_KEY` usage, and present in the `public_keys` list associated to the `SYSTEM_UPDATE_DID` in the node internal map. The key MUST not have a revocation timestamp associated to it.
-- The `effective_since` MUST be possitive.
+- The `effective_since` MUST be positive.
 - The new version MUST:
     - Either increase the `major_version` of the protocol, or keep the `major_version` unchanged while increasing the `minor_version`. If the version change is different, the operation is rejected
 - If any of the above checks fail, the operation is ignored and no changes are made to the node map
@@ -666,7 +665,7 @@ Given the DID `d` that a user is resolving:
     - Any `PRISM node` will look in its internal map in search for `d`
         - If `d` is not found, the node returns an unknown DID error
         - If `d` is found, the node will return to the user the content of the map associated to `d`. This is, the list of keys and services information associated to `d` with all the timestamp information
-- If `d` is in long forn, `PRISM nodes` MUST:
+- If `d` is in long form, `PRISM nodes` MUST:
     - extract the short form DID from the DID
     - validate the short form DID correspondence (i.e. the encoded operation must match the expected hash), and validates that the decoded operation is a well constructed `AtalaOperation` that contains a `CreateDIDOperation` 
           - If the validations fail, it returns an error.
@@ -676,13 +675,13 @@ Given the DID `d` that a user is resolving:
             - it decodes the `AtalaOpration` from the long form DID suffix, 
             - run the validations described for a `CreateDIDOperation`
                 - if validations fail, the node will return an error
-                - if the validations are successfull, the node returns the information that would be generated in its internal map if the node would process the effect of the `CreateDIDOperation` with the difference that there would add no timestamp information (this is becuase the decoded operation has no associated timestamp)
+                - if the validations are successfull, the node returns the information that would be generated in its internal map if the node would process the effect of the `CreateDIDOperation` with the difference that there would add no timestamp information (this is because the decoded operation has no associated timestamp)
 
 In order to transform this returned information to a DID document, we do as follows. 
 - From the list of public keys' information, extract the keys that have no revocation timestamps associated to them.
 - From the list of services' information:
-    - take the services' id that have extract one type and service endpoints list with no revocation data attach to them
-    - construct a list of services that have the mentioned `id`s as `id` and add as `type` and `service_endpoints`, the corresponding only elements that have no revocation time associated to them.
+    - take the services' id that have extract one type and service endpoints list with no deletion data attach to them
+    - construct a list of services that have the mentioned `id`s as `id` and add as `type` and `service_endpoints`, the corresponding only elements that have no deletion time associated to them.
 This leaves us with a list of active keys, and a list of active services.
 
 **Constructing a JSON-LD DID document**
@@ -692,7 +691,7 @@ NOTE: The protocol rules guarantee that if the list of keys is empty, then the l
 
 If the list of keys is not empty, then we construct the DID document as follows: 
 - the top level `id` and `controller` are the DID received for resolution, `d`
-- for each key that does not have usage `MASTER_KEY` nor `REVOCATION_KEY`, we create an object in the `verificationMethd` field. For each object:
+- for each key that does not have usage `MASTER_KEY` nor `REVOCATION_KEY`, we create an object in the `verificationMethod` field. For each object:
     - The `type` field value is "EcdsaSecp256k1VerificationKey2019"
     - The `controller` is the DID received for resolution, `d`
     - The `publicKeyJwk` is the JWK public key where:
@@ -701,7 +700,7 @@ If the list of keys is not empty, then we construct the DID document as follows:
         - `kid` is the `id` of the `PublicKey` (i.e. without the DID prefix and "#")
         - `x` and `y` are the corresponding coordinates of the key
     - The `@context` is an array with a single string  "https://www.w3.org/ns/did/v1" 
-    - The `id` is the key id prepended by the DID received as input and a `#` character separating the strings. For instance, for an identifier `key-1`, and `d` equals to `did:prsism:abs` we will obtain the `id` equal to `did:prism:abs#key-1`
+    - The `id` is the key id prepended by the DID received as input and a `#` character separating the strings. For instance, for an identifier `key-1`, and `d` equals to `did:prism:abs` we will obtain the `id` equal to `did:prism:abs#key-1`
 - for each verification relationship, if there is a key usage matching to it, the verification relationship will make a reference by `id` to the respective key in `verificationMethod`
 - for each active service, the translation is trivial as the fields have a one on one correspondence to the W3C data model 
     - The `id` of each service do follow the same rule as `id`s of verification methods. This is, the translation adds the DID to resolve as prefix to the id known by `PRISM nodes` and use a `#` character to separate the strings
@@ -731,7 +730,7 @@ Node Service - centralised service? Who else will be able to run Prism nodes and
 
 ## References
 
-## Apendix A: Cardano's metadata encoding 
+## Appendix A: Cardano's metadata encoding 
 
 [Cardano's metadata](https://developers.cardano.org/docs/transaction-metadata/) encodes a subset of JSON values.
 For the case of `prism` `AtalaObjects`, the top level value is a JSON object of the following shape:
@@ -770,7 +769,7 @@ where `HEX_ENCODED_SEGMENT` is the hexadecimal encoding of the corresponding sec
 
 NOTE: the value `21325` represents the last 16 bits of 344977920845, which is the decimal representation of the concatenation of the hexadecimals 50 52 49 53 4d that form the word PRISM in ASCII.
 
-## Apendix B: Protobuf models
+## Appendix B: Protobuf models
 
 In this section, we can find all the protobuf definitions  referenced in previous sections
 
