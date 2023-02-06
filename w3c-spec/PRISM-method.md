@@ -65,7 +65,7 @@ In the following sections we will describe more details about the state mentione
 
 ## DID Documents
 
-The `prism` DID method allows to create fairly expressive DID documents. In this first version, the method supports the creation of DID documents that contain arbitrary services. On the side of verification methods, all W3C verification relationships are supported (namely, authentication, key agreement, assertion, capability invocation and capability delegation). The supported verification method type is `EcdsaSecp256k1VerificationKey2019` where keys are expressed as JWK. In future versions, more verification method types will be supported.
+The `prism` DID method allows to create fairly expressive DID documents. In this first version, the method supports the creation of DID documents that contain arbitrary services. With respect to verification methods, all W3C verification relationships are supported (namely, authentication, key agreement, assertion, capability invocation and capability delegation). The supported verification method type is `EcdsaSecp256k1VerificationKey2019` where keys are expressed as JWK. In future versions, more verification method types will be supported.
 
 
 ### EXAMPLE: DID document (JSON-LD)
@@ -696,25 +696,80 @@ If the list of keys is not empty, then we construct the DID document as follows:
 
 
 ## Security Considerations
-Late publication problem.
 
-*comment: We do not have this issue because we have no off-chain storage*
+In this section, we will include adequate comments about the common security aspects around DID methods, and how they apply to the `prism` method.
 
-CAS Server - file not published or CAS server unavailable?
+### Eavesdropping
 
-*comment: We do not have a CAS server*
+The `prism` method does not generate messages of private nature as part of its protocol. Users create operations only when they intend to submit them to the blockchain or, in the case of DID creation, when they intend to share the DID. Therefore, the `prism` DID method is secure against eavesdropping attacks. It is recommended to users, not to generate `prism` operations if they do not intend to make them public.
 
-Connector Service - centralised service to connect two peers? Why is this even needed?
+### Replay
 
-*comment: I do not follow the question. The legacy connector component is not needed for the DID method*
+No operation in the `prism` protocol can suffer a replay attack by construction. `CreateDIDOperation`, once submitted, is associated to a DID. A second publication of the same operation will fail to be applied by `PRISM nodes`. For updates and deactivation, the corresponding operations contain a hash to the preceding operation, creating a linear hash chain. An operation replay would fail a previous hash check.
+For the case of protocol updates, the operation always increases the protocol version, making impossible to post twice the same operation.
 
+### Message insertion
 
-Node Service - centralised service? Who else will be able to run Prism nodes and will there be any incentive to run a node in future?
+All operations that are published in the `prism` protocol require a cryptographic signature. The protocol relays the protection against message insertion attacks to:
+1. The security of the signature scheme
+2. The security of communication channels
 
-*comment: once open sourced, anyone can run a PRISM node.*
+Users should not create operations unless they plan to publish them.
+
+### Deletion
+
+Protocol messages that are publicly shared, are published on the Cardano blockchain.
+Due to the nature of decentralized blockchains, a deletion attack would require the attacker to force the deletion of information from all the nodes in the Cardano chain. We consider this a reasonably hard condition to perform such an attack.
+
+### Modification
+
+All messages in the `prism` protocol have an integrity guarantee. Creation operations have an integrity hash check that binds operations to the DID generated. All other operations are cryptographically signed. The method security hence relies in the security of the cryptographic scheme used.
+
+### Denial of service 
+
+There is no central `PRISM node` to attack. A denial of service could succeed on individual instances of nodes, but we consider sufficiently hard to attack all instances. This also delegates the security guarantee to the Cardano blockchain.
+
+### Amplification
+
+There are two types of requests a `PRISM node` replies to:
+1. Resolution queries
+2. Processing new operations from the blockchain
+
+Resolution queries can be limited by traditional techniques such as rate limiters and load balancers.
+For the case of published operations, they require to be read from the Cardano blockchain, which requires fees to be paid. These fees impose a cost limit to perform attacks of this nature. 
+We hence rely partially on the underlying blockchain spam protection to avoid resource exhaustion.
+
+### Man-in-the-middle
+
+The messages shared as part of the `prism` protocol do not have expected recipients, making man in the middle attacks non applicable.
+
+### Other considerations
+
+#### Trust delegation settings
+
+We would like to add some comments in relation to the trust setting that the method allows to use. A user can opt to not self host a `PRISM node`. This situation generates a security dependency on the trusted `PRISM node` provider. For instance, a user could submit a DID update to the provider, but this actor could opt to not forward the operation to the blockchain. Furthermore, the node provider could lie to the user and convince him that the operation was indeed submitted and applied.
+
+In order to avoid these type of situations, we suggest the following recommendations:
+1. If possible, self host an instance of the `PRISM node`
+2. If self hosting is not possible, query a set of `PRISM nodes` provided by different non related actors
+3. When an operation is submitted to a node, query about its confirmation to multiple providers
+4. `PRISM nodes`, based on implementation, are able to return the transaction id of the underlying blockchain that carries the published operations. 
+
+#### Blockchain funds safety
+
+`PRISM nodes` can submit transactions to their underlying operating blockchain. This implies that fees are paid to the blockchain when transactions are submitted. Such fees are paid by a wallet/account on the chain. When the wallet is managed by the `PRISM node`, proper access control to the node should be in place to avoid draining of the said funds. In particular, it is recommended to have minimal funds on the mentioned wallet, and refund it periodically as demand requires.
 
 ## Privacy Considerations
 
+As most DID methods, it is recommended to users to not add personal identifiable information on their DID documents. This includes:
+- Avoid identifiable information on verification method ids
+- Avoid identifiable information on services ids
+
+In addition, consider correlation risks associated to blockchain transactions. When a user self hosts a `PRISM node` all his published events will be tied to blockchain transactions. The user should take adequate measures to avoid correlation of independent DIDs. Examples of mitigation strategies are:
+- Have multiple wallets for different DIDs
+- Use `PRISM nodes` hosted by external providers to publish operations
+
+We want to remind the reader that all published operations of the `prism` protocol are hard, if not impossible, to delete.
 
 ## References
 
