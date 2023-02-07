@@ -338,12 +338,12 @@ When a PRISM node receives a DID for resolution, it first checks if it is a shor
 If it is a short form:
 * It checks if there is information about its corresponding DID document on its database. 
   * If there is, it returns the latest state known to it. 
-  * If there is no information, the resolution returns the "notFound" error
+  * If there is no information, the resolution returns the `notFound` error
 
 If the DID to resolve is in long form:
 * It extracts the short form DID from the DID
 * It validates the short form DID correspondence (i.e. the encoded operation must match the expected hash), and validates that the decoded operation is a well constructed `AtalaOperation` that contains a `CreateDIDOperation` 
-  * If the validations fail, it returns the "invalidDid" error.
+  * If the validations fail, it returns the `invalidDid` error.
 * It then checks if there is information about the DID document corresponding to the short DID on its database. 
   * If there is, it returns the data on its database.
   * If there is no information, it decodes the `AtalaOperation` from the long form DID suffix, and returns the corresponding DID document. See next sections to find the translation between protobuf models and DID documents.
