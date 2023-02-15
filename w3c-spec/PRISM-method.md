@@ -222,7 +222,7 @@ message PublicKey {
     string id = 1; // The key identifier within the DID Document.
     KeyUsage usage = 2; // The key's purpose.
     LedgerData added_on = 5; // (Only present during resolution) The ledger details related to the event that added the key to the DID Document.
-    LedgerData revoked_on = 6; // (Only present during resolution) The ledger details related to the event that revoked the key from the DID Document.
+    LedgerData revoked_on = 6; // (Only present during resolution) The ledger details related to the event that deleted the key from the DID Document.
 
     // The key's representation.
     oneof key_data {
@@ -399,7 +399,7 @@ message UpdateServiceAction {
 - The `actions` field MUST contain a non empty list of well constructed `UpdateDIDAction`s
 - If the action is:
     - `AddKeyAction`, the `key` field MUST not be empty, and it MUST contain a well formed `PublicKey` as described in previous sections
-    - `RemoveKeyAction`, the `keyId` field MUST contain the `id` of the `PublicKey` to revoke from the DID document
+    - `RemoveKeyAction`, the `keyId` field MUST contain the `id` of the `PublicKey` to delete from the DID document
     - `AddServiceAction`, the `service` field MUST not be empty, and it MUST contain a well constructed `Service` message as described in previous sections
     - `RemoveServiceAction`, the `serviceId` field MUST contain the `id` of the service to remove from the DID document
     - `UpdateServiceAction`: 
@@ -519,7 +519,7 @@ The keys and services information consist of:
     - Each key has additional timestamps that describe when the keys were added or deleted.
 - the services associated to the DID. For each service we also have
     - the list of types with timestamping information that declares when each type has been added or deleted.
-    - the list of lists of service endpoints, each list with timestamping information that declares when the list has been added or revoked.
+    - the list of lists of service endpoints, each list with timestamping information that declares when the list has been added or deleted.
 
 For example, when a DID is created, an entry is added to the map, that adds the DID and maps it to the initial keys and services described in the corresponding `CreateDIDOperation`. This is:
 - it adds the list of keys and set their timestamp indicating when they were added on, and
@@ -627,7 +627,7 @@ Once extracted from an `AtalaBlock`, if a `PRISM node` finds a `SignedAtalaOpera
 For all keys and services that do not have a revocation/deletion timestamp, nodes MUST set the deactivation operation timestamp as the deletion timestamp.
 The new last operation hash MUST be the hash of the `AtalaOperation` that wrapped the corresponding `DeactivateDIDOperation`
 
-Note that this makes all keys (including `MASTER_KEY` keys) revoked. Meaning that no further updates will be possible on the corresponding DID.
+Note that this marks all keys (including `MASTER_KEY` keys) as deleted. Meaning that no further updates will be possible on the corresponding DID.
 
 ### Processing of ProtocolVersionUpdateOperations
 
