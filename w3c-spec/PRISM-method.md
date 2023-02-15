@@ -36,32 +36,24 @@ The namestring that shall identify this DID `method-name` is: `prism`.
 
 A DID that uses this method MUST begin with the following prefix `did:prism`. The prefix MUST be in lowercase.
 
-An additional optional network specific identifier may be added as such
-- `did:prism:testnet:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b`
-
-
-By default, if the network specific identifier is not present, then the associated network is Cardano mainnet.
-
-The remainder of the DID after the optional network identifier is specified below.
+The remainder of the DID is specified below.
 
 ### Method Specific Identifier
 
 ### Prism DID Method Syntax
 ```abnf
-prism-did          = "did:prism:" [network-id] initial-hash [prism-suffix]
-network-id         = "testnet" ":"
+prism-did          = "did:prism:" initial-hash [encoded-state]
 initial-hash       = 64HEXDIGIT 
-prism-suffix       = ":" 1*id-char
+encoded-state      = ":" 1*id-char
 id-char            = ALPHA / DIGIT / "-" / "_" 
 ```
-
 ### Examples of `did:prism` Identifiers
 
 The method defines two types of DIDs. The first one represents the DIDs that have been anchored on the blockchain following the protocol rules:
 ```abnf
 did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b
 ```
-The DID suffix corresponds to the hash of the initial state of the DID document.
+The DID specific identifier corresponds to the hex-encoded hash of the initial state of the DID document.
 
 The protocol also allows to create DIDs without interaction with the blockchain:
 ```abnf
@@ -306,7 +298,7 @@ Below we see the rules to construct a well-formed `CreateDIDOperation`, these ru
 1. Once the controller created the `CreateDIDOperation`, he can construct an `AtalaOperation` and sign it using the `SIGNATURE_ALGORITHM`. With that, construct a `SignedAtalaOperation` that contains the generated signature in the `signature` field; the `AtalaOperation` in the `operation` field, and the key identifier of the master key used to generate this signature in `signed_with`. Note that the `usage` of the key used to sign the operation MUST be `MASTER_KEY`
 2. With the `SignedAtalaOperation` the user can decide to create an `AtalaBlock` and `AtalaObject` messages, and submit a transaction himself containing the operation. Alternatively, he can gather more operations before submitting a transaction in order to save fees.
 3. Once the transaction containing the operation has a `SECURE_DEPTH` in the blockchain, then the operation will be processed by `PRISM nodes`.
-4. The DID generated will have `did:prism:` as prefix, then the optional network identifier, and the suffix will be produced by applying the `SHORT_ENCODING_ALGORITHM` to the hash produced by the `HASHING_ALGORITHM` applied to the binary representation of the `AtalaOperation` that was signed. We call these DIDs, short form DIDs.
+4. The DID generated will have `did:prism:` as prefix, the method specific identifier is produced by applying the `SHORT_ENCODING_ALGORITHM` to the hash produced by the `HASHING_ALGORITHM` applied to the binary representation of the `AtalaOperation` that was signed. We call these DIDs, short form DIDs.
 
 #### Long form DIDs (unpublished DIDs)
 
@@ -341,7 +333,7 @@ If the DID to resolve is in long form:
   * If the validations fail, it returns the `invalidDid` error.
 * It then checks if there is information about the DID document corresponding to the short DID on its database. 
   * If there is, it returns the data on its database.
-  * If there is no information, it decodes the `AtalaOperation` from the long form DID suffix, and returns the corresponding DID document. See next sections to find the translation between protobuf models and DID documents.
+  * If there is no information, it decodes the `AtalaOperation` from the long form DID, and returns the corresponding DID document. See next sections to find the translation between protobuf models and DID documents.
 
 
 ### Update DID 
@@ -476,7 +468,7 @@ message ProtocolVersion {
 ```
 
 **Construction rules**
-- The `proposer_did` MUST be the suffix of the `SYSTEM_UPDATE_DID`
+- The `proposer_did` MUST be the method specific identifier of the `SYSTEM_UPDATE_DID`
 - The `version` MUST not be empty, and MUST contain a well constructed `ProtocolVersionInfo` message
 - The `ProtocolVersionInfo` message:
     - `version_name` can be empty, and represents an optional name of the version
@@ -667,7 +659,7 @@ Given the DID `d` that a user is resolving:
     - check if there is information about the short form DID in the internal map. 
         - If there is, it returns the data of the map as in the case of `d` being a short form
         - If there is no information:
-            - it decodes the `AtalaOpration` from the long form DID suffix, 
+            - it decodes the `AtalaOpration` from the long form DID, 
             - run the validations described for a `CreateDIDOperation`
                 - if validations fail, the node will return an error
                 - if the validations are successful, the node returns the information that would be generated in its internal map if the node would process the effect of the `CreateDIDOperation` with the difference that there would add no timestamp information (this is because the decoded operation has no associated timestamp)
