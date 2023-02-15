@@ -679,6 +679,13 @@ NOTE: The protocol rules guarantee that if the list of keys is empty, then the l
 
 If the list of keys is not empty, then we construct the DID document as follows: 
 - the top level `id` and `controller` are the DID received for resolution, `d`
+- the `@context` of the generated document MUST be 
+      ```
+        [
+          "https://www.w3.org/ns/did/v1",
+          "https://w3id.org/security/suites/secp256k1-2019/v1"
+        ]
+      ```
 - for each key that does not have usage `MASTER_KEY` nor `REVOCATION_KEY`, we create an object in the `verificationMethod` field. For each object:
     - The `type` field value is "EcdsaSecp256k1VerificationKey2019"
     - The `controller` is the DID received for resolution, `d`
