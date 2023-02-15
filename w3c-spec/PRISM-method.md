@@ -53,7 +53,7 @@ The method defines two types of DIDs. The first one represents the DIDs that hav
 ```abnf
 did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b
 ```
-The DID specific identifier corresponds to the hex-encoded hash of the initial state of the DID document.
+The DID method specific identifier corresponds to the hex-encoded hash of the initial state of the DID document.
 
 The protocol also allows to create DIDs without interaction with the blockchain:
 ```abnf
@@ -628,6 +628,7 @@ For all keys and services that do not have a revocation/deletion timestamp, node
 The new last operation hash MUST be the hash of the `AtalaOperation` that wrapped the corresponding `DeactivateDIDOperation`
 
 Note that this marks all keys (including `MASTER_KEY` keys) as deleted. Meaning that no further updates will be possible on the corresponding DID.
+d
 
 ### Processing of ProtocolVersionUpdateOperations
 
