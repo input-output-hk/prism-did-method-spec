@@ -727,17 +727,19 @@ All messages in the `prism` protocol have an integrity guarantee. Creation opera
 
 ### Denial of service 
 
-There is no central `PRISM node` to attack. A denial of service could succeed on individual instances of nodes, but we consider sufficiently hard to attack all instances. This also delegates the security guarantee to the Cardano blockchain.
+In the setting where a user is not hosting his own `PRISM node`, the security relies on the security measures taken by the delegated party.
+Any user running a `PRISM node` should take traditional mitigations to these type of attacks. This includes but is not limited to proper resource provision to `PRISM node` deployments, load balancing techniques, rate limitations on queries, push-back to clients.
 
 ### Amplification
 
-There are two types of requests a `PRISM node` replies to:
-1. Resolution queries
-2. Processing new operations from the blockchain
+There are three types of requests a `PRISM node` replies to:
+1. Resolution queries 
+2. Operation submission queries (publish operations to the blockchain)
+3. Processing new operations read from the blockchain
 
-Resolution queries can be limited by traditional techniques such as rate limiters and load balancers.
-For the case of published operations, they require to be read from the Cardano blockchain, which requires fees to be paid. These fees impose a cost limit to perform attacks of this nature. 
-We hence rely partially on the underlying blockchain spam protection to avoid resource exhaustion.
+Resolution and operation submission queries can be limited by traditional techniques such as rate limiters and load balancers.
+For the case of reading operations from the Cardano blockchain, an attacker would need to publish those operations first, and this requires fees to be paid. These fees impose a cost limit to perform attacks of this nature. Therefore, we rely partially on the underlying blockchain spam protection to avoid resource exhaustion.
+Additionally, the protocol limits the length of identifiers, URIs, and other strings inside operations; it also restricts a maximum number of verification methods and services associated to a DID Document. These limitations also contribute to maintain the consumption of resources bounded to reasonable limits. 
 
 ### Man-in-the-middle
 
@@ -759,13 +761,20 @@ In order to avoid these type of situations, we suggest the following recommendat
 
 `PRISM nodes` can submit transactions to their underlying operating blockchain. This implies that fees are paid to the blockchain when transactions are submitted. Such fees are paid by a wallet/account on the chain. When the wallet is managed by the `PRISM node`, proper access control to the node should be in place to avoid draining of the said funds. In particular, it is recommended to have minimal funds on the mentioned wallet, and refund it periodically as demand requires.
 
+#### Protocol update keys
+
+The owner of `SYSTEM_UPDATE_DID` should take the appropriate measures to protect such DID. 
+These is, to protect the cryptographic keys that control the said DID. Some possible measures can include applying threshold techniques, which allow the decomposition of cryptographic secrets into pieces, which could be stored by separate actors. The reconstruction of the secrets could be done with access to a subset of all the initial pieces. 
+
 ## Privacy Considerations
 
-As most DID methods, it is recommended to users to not add personal identifiable information on their DID documents. This includes:
-- Avoid identifiable information on verification method ids
-- Avoid identifiable information on services ids
+As most DID methods, it is recommended to users to not add personal identifiable information in their DID documents. This includes:
+- Verification method ids
+- Services ids
+- URIs
+- Any other place where it could fit inside DID Documents
 
-In addition, consider correlation risks associated to blockchain transactions. When a user self hosts a `PRISM node` all his published events will be tied to blockchain transactions. The user should take adequate measures to avoid correlation of independent DIDs. Examples of mitigation strategies are:
+In addition, consider correlation risks associated to blockchain transactions. When a user self hosts a `PRISM node`, all his published events will be tied to blockchain transactions. The user should take adequate measures to avoid correlation of independent DIDs. Examples of mitigation strategies are:
 - Have multiple wallets for different DIDs
 - Use `PRISM nodes` hosted by external providers to publish operations
 
