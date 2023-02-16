@@ -679,14 +679,17 @@ NOTE: The protocol rules guarantee that if the list of keys is empty, then the l
 
 If the list of keys is not empty, then we construct the DID document as follows: 
 - the top level `id` and `controller` are the DID received for resolution, `d`
-- the `@context` of the generated document MUST be 
+- the `@context` of the generated document MUST include at a minimum 
       ```
         [
-          "https://www.w3.org/ns/did/v1",
-          "https://w3id.org/security/suites/secp256k1-2019/v1"
+          "https://www.w3.org/ns/did/v1"
         ]
       ```
-- for each key that does not have usage `MASTER_KEY` nor `REVOCATION_KEY`, we create an object in the `verificationMethod` field. For each object:
+- Depending on the verification method types and services types in the DID document, additional entries MUST be added to the `@context`, such as:
+  - For verification method type `"EcdsaSecp256k1VerificationKey2019"`, add `"https://w3id.org/security/suites/secp256k1-2019/v1"`
+  - For verification method type `"Ed25519VerificationKey2020"`, add `"https://w3id.org/security/suites/ed25519-2020/v1"`
+  - For service type `"DIDCommMessaging"`, add `"https://didcomm.org/messaging/contexts/v2"`
+- For each key that does not have usage `MASTER_KEY` nor `REVOCATION_KEY`, we create an object in the `verificationMethod` field. For each object:
     - The `type` field value is "EcdsaSecp256k1VerificationKey2019"
     - The `controller` is the DID received for resolution, `d`
     - The `publicKeyJwk` is the JWK public key where:
