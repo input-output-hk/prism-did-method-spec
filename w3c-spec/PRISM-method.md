@@ -28,6 +28,10 @@ This document describes the first version of the `prism` DID method. Each versio
 | `HASH_ALGORITHM` | Algorithm for generating hashes. | SHA-256 |
 | `SHORT_ENCODING_ALGORITHM` | Encoding selected for various data (signatures, hashes, etc.). | HEX |
 | `LONG_ENCODING_ALGORITHM` | Encoding selected for Protobuf binary. | base64URL |
+| `MAX_ID_SIZE` | Maximum number of characters for an `id` field value. | 50 |
+| `MAX_TYPE_SIZE` | Maximum number of characters for a `type` field value. | 100 |
+| `MAX_SERVICE_NUMBER` | Maximum number of active services a DID Document can have at the same time. | 50 |
+| `MAX_VERIFICATION_METHOD_NUMBER` | Maximum number of active verification methods a DID Document can have at the same time. | 50 |
 
 
 ## DID Method Name
@@ -271,12 +275,14 @@ Below we see the rules to construct a well-formed `CreateDIDOperation`, these ru
 
 - The `did_data` field of the `CreateDIDOperation` MUST not be empty and MUST be properly constructed
 - Each element of `public_keys` and `services` fields MUST be constructed correctly
-- `services` can be empty. For each `Service` message in the list:
+- `services` can be empty. The list MUST not exceed `MAX_SERVICE_NUMBER` elements.
+- For each `Service` message in the list:
     - The fields `added_on` and `deleted_on` MUST be empty
-    - The `type` field MUST be a string. The string MUST not start nor end with whitespaces, and MUST have at least a non whitespace character
-    - The `id` field MUST be a valid [fragment](https://www.rfc-editor.org/rfc/rfc3986#section-3.5) string in accordance to [DID URL syntax](https://www.w3.org/TR/did-core/#did-url-syntax)
+    - The `type` field MUST be a string. The string MUST not start nor end with whitespaces, and MUST have at least a non whitespace character. The string MUST not exceed `MAX_TYPE_SIZE` characters in length.
+    - The `id` field MUST be a valid [fragment](https://www.rfc-editor.org/rfc/rfc3986#section-3.5) string in accordance to [DID URL syntax](https://www.w3.org/TR/did-core/#did-url-syntax). The `id` MUST not exceed `MAX_ID_SIZE` characters in length.
     - The `service_endpoint` field MUST contain a non-empty list of URIs conforming to [RFC3986](https://www.w3.org/TR/did-core/#bib-rfc3986) and normalized according to the [Normalization and Comparison rules in RFC3986 and to any normalization](https://www.rfc-editor.org/rfc/rfc3986#section-6) rules in its applicable URI scheme specification.
 - The `public_keys` field MUST contain at least one `PublicKey` message for which its `usage` field MUST be `MASTER_KEY`
+  - `public_keys` MUST not exceed `MAX_VERIFICATION_METHOD_NUMBER` elements.
 - For each `PublicKey` message:
     - The `id` field MUST follow the same rules as `id`s for `Service`s
     - The `usage` field MUST not be `UNKNOWN_KEY`
@@ -566,7 +572,11 @@ Once extracted from an `AtalaBlock`, if a `PRISM node` finds a `SignedAtalaOpera
 - The update operation contains a list of update actions. 
     - `PRISM nodes` MUST process all actions in order (see details below). 
     - If any action fails to be processed, then the entire operation MUST be ignored. This means that any previous successful action from the list that may have been applied, MUST be rolled back 
-    - After applying the effect of all the actions of the update operation, there MUST be at least one public key associated to the updated DID in the map, that has `MASTER_KEY` as usage and has no revocation time associated to it. If no key has this conditions, then the actions MUST be rolled back and the entire update operation is ignored.
+    - After applying the effect of all the actions of the update operation:
+       - There MUST be at least one public key associated to the updated DID in the map, that has `MASTER_KEY` as usage and has no revocation time associated to it. 
+       - There MUST not be more than `MAX_SERVICE_NUMBER` services associated to the updated DID in the map where all have no revocation time associated to them. This means that there must not be more than `MAX_SERVICE_NUMBER` active services after the update.
+       - There MUST not be more than `MAX_VERIFICATION_METHOD_NUMBER` keys associated to the updated DID in the map where all have no revocation time associated to them. This means that there must not be more than `MAX_VERIFICATION_METHOD_NUMBER` active keys after the update.
+       - If any of the previous conditions is not met, the actions MUST be rolled back and the entire update operation is ignored.
 
 Each action will affect the information in the internal map, if all the actions are applied successfully then the last operation hash MUST be updated to the hash of the `AtalaOperation` that wrapped the corresponding `UpdateDIDOperation`
 
