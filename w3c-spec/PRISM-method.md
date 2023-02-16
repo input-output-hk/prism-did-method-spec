@@ -687,7 +687,6 @@ If the list of keys is not empty, then we construct the DID document as follows:
         - `kty` is "EC"
         - `kid` is the `id` of the `PublicKey` (i.e. without the DID prefix and "#")
         - `x` and `y` are the corresponding coordinates of the key
-    - The `@context` is an array with a single string  "https://www.w3.org/ns/did/v1" 
     - The `id` is the key id prepended by the DID received as input and a `#` character separating the strings. For instance, for an identifier `key-1`, and `d` equals to `did:prism:abs` we will obtain the `id` equal to `did:prism:abs#key-1`
 - for each verification relationship, if there is a key usage matching to it, the verification relationship will make a reference by `id` to the respective key in `verificationMethod`
 - for each active service, the translation is trivial as the fields have a one on one correspondence to the W3C data model 
