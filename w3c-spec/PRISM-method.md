@@ -677,7 +677,7 @@ Given the DID `d` that a user is resolving:
     - check if there is information about the short form DID in the internal map. 
         - If there is, it returns the data of the map as in the case of `d` being a short form
         - If there is no information:
-            - it decodes the `AtalaOpration` from the long form DID, 
+            - it decodes the `AtalaOperation` from the long form DID, 
             - run the validations described for a `CreateDIDOperation`
                 - if validations fail, the node will return an error
                 - if the validations are successful, the node returns the information that would be generated in its internal map if the node would process the effect of the `CreateDIDOperation` with the difference that there would add no timestamp information (this is because the decoded operation has no associated timestamp)
