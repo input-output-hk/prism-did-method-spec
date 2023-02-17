@@ -333,7 +333,7 @@ If the DID to resolve is in long form:
   * If the validations fail, it returns the `invalidDid` error.
 * It then checks if there is information about the DID document corresponding to the short DID on its database. 
   * If there is, it returns the data on its database.
-  * If there is no information, it decodes the `AtalaOperation` from the long form DID, and returns the corresponding DID document. See next sections to find the translation between protobuf models and DID documents.
+  * If there is no information, it decodes the `AtalaOperation` from the long form DID, and returns the corresponding DID document. See next sections to find the translation between protobuf models and DID documents as well as DID document metadata.
 
 
 ### Update DID 
@@ -672,7 +672,8 @@ In order to transform this returned information to a DID document, we do as foll
     - construct a list of services that have the mentioned `id`s as `id` and add as `type` and `service_endpoints`, the corresponding only elements that have no deletion time associated to them.
 This leaves us with a list of active keys, and a list of active services.
 
-**Constructing a JSON-LD DID document**
+### Constructing a JSON-LD DID document
+
 If both of the lists are empty, we have that the DID has been deactivated, and we can return an empty JSON object. 
 
 NOTE: The protocol rules guarantee that if the list of keys is empty, then the list of services must be empty. If this is not the case, then this indicates an implementation error.
@@ -693,6 +694,35 @@ If the list of keys is not empty, then we construct the DID document as follows:
     - The `id` of each service do follow the same rule as `id`s of verification methods. This is, the translation adds the DID to resolve as prefix to the id known by `PRISM nodes` and use a `#` character to separate the strings
     - In cases where the list of service endpoints for a service contains only one element, the service endpoint is represented with a string. When the list has more than one element, the list is represented as a JSON array
 
+### Constructing the DID document metadata
+
+In addition to the DID document, the DID resolution process also returns DID document metadata.
+
+- If `d` is in long form, DID document metadata MUST contain a `canonicalId` property with the short form DID as its value.
+- If `d` is in short form, DID document metadata MUST NOT contain a `canonicalId` property.
+- DID document metadata MUST contain a `created` property with the timestamp of the Cardano block that contained the first valid `SignedAtalaOperation` with a `CreateDIDOperation` that created the DID.
+- DID document metadata MUST contain an `updated` property with the timestamp of the Cardano block that contained the latest valid `SignedAtalaOperation` which changed the DID's internal state.
+- DID document metadata MUST contain a `versionId` property with the hash of the latest valid `SignedAtalaOperation` which created the DID or changed the DID's internal state.
+- DID document metadata MUST contain a `deactivated` property with the boolean value `true` if the DID has been deactivated with a valid `DeactivateDIDOperation`. Otherwise, this property is OPTIONAL, but if included, MUST have the boolean value `false`.
+- Resolvers MAY add additional method-specific DID document metadata properties, such as
+  - The position of the Cardano transaction in the `AtalaBlock`
+  - The position of the `SignedAtalaOperation` in the `AtalaBlock`
+
+Example:
+
+```json
+{
+  "didDocumentMetadata": {
+    "canonicalId": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290",
+    "created": "2023-02-04T13:52:10Z",
+    "updated": "2023-01-18T02:19:25Z",
+    "versionId": "588ae32c68fe6c2a3af1b076284b6d880a40888025e382ab39dc9dc7cd9de382",
+    "deactivated": true,
+    "cardanoTransactionPosition": 0,
+    "cardanoOperationPosition": 0
+  }
+}
+```
 
 ## Security Considerations
 
