@@ -30,9 +30,11 @@ This document describes the first version of the `prism` DID method. Each versio
 | `LONG_ENCODING_ALGORITHM` | Encoding selected for Protobuf binary. | base64URL |
 | `MAX_ID_SIZE` | Maximum number of characters for an `id` field value. | 50 |
 | `MAX_TYPE_SIZE` | Maximum number of characters for a `type` field value. | 100 |
+| `MAX_SERVICE_ENDPOINT_SIZE` | Maximum number of characters for a `serviceEndpoint` field value. | 300 |
 | `MAX_SERVICE_NUMBER` | Maximum number of active services a DID Document can have at the same time. | 50 |
 | `MAX_VERIFICATION_METHOD_NUMBER` | Maximum number of active verification methods a DID Document can have at the same time. | 50 |
-
+| `SECP_CURVE_NAME` | String identifier for the SECP256K1 eliptic curve | "secp256k1" |
+| `ED255_CURVE_NAME` | String identifier for the ED25519 eliptic curve | "ed25519" 
 
 ## DID Method Name
 
@@ -80,7 +82,8 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
       "https://www.w3.org/ns/did/v1",
       "https://w3id.org/security/suites/secp256k1-2019/v1",
       "https://w3id.org/security/suites/ed25519-2020/v1",
-      "https://didcomm.org/messaging/contexts/v2"
+      "https://didcomm.org/messaging/contexts/v2",
+      "https://identity.foundation/.well-known/did-configuration/v1"
     ],
     "id": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290",
     "verificationMethod": [
@@ -114,7 +117,7 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
     ],
     "service": [
       {
-        "id":"did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#linked-domain",
+        "id": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#DIDCommMessaging",
         "type": "DIDCommMessaging",
         "serviceEndpoint": [ 
           { 
@@ -123,6 +126,18 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
             "routingKeys": ["did:example:somemediator#somekey"] 
           }
         ]
+      },
+      {
+        "id" : "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#linked-domain-1",
+        "type": "LinkedDomains",
+        "serviceEndpoint": {
+          "origins": ["https://foo.example.com", "https://identity.foundation"]
+        }
+      },
+      {
+        "id": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#linked-domain-2",
+        "type": "LinkedDomains",
+        "serviceEndpoint": "https://bar.example.com"
       }
     ]
   }
@@ -281,7 +296,7 @@ message CompressedECKeyData {
 message Service {
     string id = 1;
     string type = 2;
-    repeated string service_endpoint = 3;
+    string service_endpoint = 3;
     LedgerData added_on = 4; // (only present in DID resolution) The ledger details related to the event that added the service to the DID Document.
     LedgerData deleted_on = 5; // (only present in DID resolution) The ledger details related to the event that deleted the service from the DID Document.
 }
@@ -295,9 +310,17 @@ Below we see the rules to construct a well-formed `CreateDIDOperation`, these ru
 - `services` can be empty. The list MUST not exceed `MAX_SERVICE_NUMBER` elements.
 - For each `Service` message in the list:
     - The fields `added_on` and `deleted_on` MUST be empty
-    - The `type` field MUST be a string. The string MUST not start nor end with whitespaces, and MUST have at least a non whitespace character. The string MUST not exceed `MAX_TYPE_SIZE` characters in length.
+    - The `type` field MUST be a string or a non empty JSON array of strings. 
+      - The `type` value MUST not start nor end with whitespaces, and MUST have at least a non whitespace character. 
+      - The `type` value MUST not exceed `MAX_TYPE_SIZE` characters in length.
+      - The strings constructing the value in `type` SHOULD be registered in the DID Specification Registries [DID-SPEC-REGISTRIES](https://www.w3.org/TR/did-spec-registries/)
     - The `id` field MUST be a valid [fragment](https://www.rfc-editor.org/rfc/rfc3986#section-3.5) string in accordance to [DID URL syntax](https://www.w3.org/TR/did-core/#did-url-syntax). The `id` MUST not exceed `MAX_ID_SIZE` characters in length.
-    - The `service_endpoint` field MUST contain a non-empty list of URIs conforming to [RFC3986](https://www.w3.org/TR/did-core/#bib-rfc3986) and normalized according to the [Normalization and Comparison rules in RFC3986 and to any normalization](https://www.rfc-editor.org/rfc/rfc3986#section-6) rules in its applicable URI scheme specification.
+    - The `service_endpoint` field MUST contain one of:
+       - a URI 
+       - a JSON object
+       - a non-empty JSON array of URIs and/or JSON objects
+       - all mentioned URIs MUST conform to [RFC3986](https://www.w3.org/TR/did-core/#bib-rfc3986) and normalized according to the [Normalization and Comparison rules in RFC3986 and to any normalization](https://www.rfc-editor.org/rfc/rfc3986#section-6) rules in its applicable URI scheme specification
+    - The `service_endpoint` value MUST not exceed `MAX_SERVICE_ENDPOINT_SIZE` characters in length
 - The `public_keys` field MUST contain at least one `PublicKey` message for which its `usage` field MUST be `MASTER_KEY`
   - `public_keys` MUST not exceed `MAX_VERIFICATION_METHOD_NUMBER` elements.
 - For each `PublicKey` message:
@@ -310,11 +333,11 @@ Below we see the rules to construct a well-formed `CreateDIDOperation`, these ru
         - `KEY_AGREEMENT_KEY`, `AUTHENTICATION_KEY`, `CAPABILITY_INVOCATION_KEY` and `CAPABILITY_DELEGATION_KEY`: represent their mirror verification relationship according to DID core specification.
     - `key_data` field MUST not be empty
         - If it contains an `ECKeyData`
-            - The `curve` MUST be the string `"secp256k1"`
+            - The `curve` MUST be either `SECP_CURVE_NAME` or `ED25519_CURVE_NAME`
             - The `x` MUST contain a valid `x` coordinate of the public key
             - The `y` MUST contain a valid `y` coordinate of the public key
         - If it contains a `CompressedECKeyData` 
-            - The `curve` MUST be the string `"secp256k1"`
+            - The `curve` MUST be the string `SECP_CURVE_NAME` or `ED25519_CURVE_NAME`
             - The `x` MUST contain a valid `x` coordinate of the public key plus the extra byte indicating the sign of the `y` axis. **TODO: add encoding reference**
         
 **Signing and submission**
@@ -412,7 +435,7 @@ message UpdateServiceAction {
     string serviceId = 1; // scoped to the did, unique per did
     string type = 2; // new type if provided
     // Will replace all existing service endpoints of the service with provided ones
-    repeated string service_endpoints = 3;
+    string service_endpoints = 3;
 }
 ```
 
@@ -427,7 +450,7 @@ message UpdateServiceAction {
     - `RemoveServiceAction`, the `serviceId` field MUST contain the `id` of the service to remove from the DID document
     - `UpdateServiceAction`: 
         - the`serviceId` field MUST contain the `id` of the service to update
-        - it MUST NOT be the case that both, the `type` field is empty and the `service_endpoints` field contains an empty list. This is, at least one of this field MUST be correctly populated
+        - it MUST NOT be the case that both, the `type` field and `service_endpoint` field are empty. This is, at least one of this field MUST be correctly populated
         - the `type` field, if present, MUST follow the same rules of the `type` field of the `Service` message. The `type` represents the new type (if present) that will replace the existing one.
         - the `service_endpoints` field, if non empty, MUST conform the same rules as the `service_endpoint` field of the `Service` message
 
@@ -539,17 +562,18 @@ The map takes DIDs, and maps them to:
 
 The keys and services information consist of:
 - the list of keys associated to the DID.
-    - Each key has additional timestamps that describe when the keys were added or deleted.
+    - Each key has additional timestamps and transaction ids (from the underlying Cardano blockchain) that describe when the keys were added or deleted.
 - the services associated to the DID. For each service we also have
-    - the list of types with timestamping information that declares when each type has been added or deleted.
-    - the list of lists of service endpoints, each list with timestamping information that declares when the list has been added or deleted.
+    - the list of `type`s values with timestamps and transaction ids that declares when each type value has been added or deleted.
+    - the list of `service_endpoint` values, with timestamps and transaction ids that declare when the values were added or deleted.
 
 For example, when a DID is created, an entry is added to the map, that adds the DID and maps it to the initial keys and services described in the corresponding `CreateDIDOperation`. This is:
-- it adds the list of keys and set their timestamp indicating when they were added on, and
-- for each service it adds the singleton lists with type and list of service endpoints with a corresponding added on timestamp to each entity.
+- it adds the list of keys and set their timestamp indicating when they were added on, it also set to each key the transaction id of the transaction that carried the said operation and
+- for each service it adds the singleton lists with `type` and `service_endpoint` values with a corresponding "added on" timestamp and transaction id to each entity.
 - the hash of the `AtalaOperation` that wrapped the corresponding `CreateDIDOperation`
 
 We will describe the structure of these timestamps, and the precise effect changes operation induces in these map in the next sections.
+
 
 #### Definition of time
 
@@ -558,7 +582,9 @@ Each Cardano block has an associated timestamp attached to it which describes th
 - absn is the position of the Cardano transaction that carries the `AtalaBlock` in the Cardano block
 - osn is the position of the operation in the `AtalaBlock` that carries it
 
-every DID operation will have an associated timestamp, which `PRISM nodes` will store in their internal state while processing the operations.
+every DID operation will have an associated timestamp (and transaction id), which `PRISM nodes` will store in their internal state while processing the operations.
+
+NOTE: in order to simplify the reading, from this point on, whenever we write that a timestamp is set/added/assigned, we also implicitly estate that the corresponding transaction id that carries the operation in context is also set/added/assigned accordingly. We recall that all operations carried by the same `AtalaBlock` will share a common transaction id.
 
 ### Processing of CreateDIDOperations
 
@@ -576,7 +602,7 @@ The `PRISM node` will add to its map, the DID derived from the create operation 
 - the list of `PublicKey`s, attaching to each of them the corresponding operation timestamp as their addition timestamp.
 - the list of `Service`s, for each service
     - it adds a singleton list with the type with the corresponding operation timestamp as it addition timestamp attach to it.
-    - it adds a singleton list with the list of service endpoints with the corresponding operation timestamp as it addition timestamp attach to it. 
+    - it adds a singleton list with the service endpoint value with the corresponding operation timestamp as it addition timestamp attach to it. 
 - It will also associate to this DID the hash of the `AtalaOperation` that contains the `CreateDIDOperation`. We will refer to this hash as its last operation hash.
 
 
@@ -631,8 +657,8 @@ The node updates the map, and adds to the service of the corresponding DID, and 
 #### Process UpdateServiceAction
 
 - The `serviceId` of the action MUST already be associated to the DID to update in the map, 
-    - this service will have a list of types, there MUST be exactly one type in this list that does not have  already an associated deletion time. We will call this type `current_type`
-    - this service will have a list of list of service endpoints, there MUST be exactly one list in this list that does not have already an associated revocation time. We will call this list `current_endpoints` 
+    - this service will have a list of types, there MUST be exactly one type in this list that does not have already an associated deletion time. We will call this type `current_type`
+    - this service will have a list of service endpoints, there MUST be exactly one service endpoint that does not have already an associated revocation time. We will call this list `current_endpoints` 
 
 **Update of internal map**
 - If the `UpdateServiceAction` has a non empty `type`, we will refer to it as `new_type`
@@ -695,8 +721,8 @@ Given the DID `d` that a user is resolving:
 In order to transform this returned information to a DID document, we do as follows. 
 - From the list of public keys' information, extract the keys that have no revocation timestamps associated to them.
 - From the list of services' information:
-    - take the services' id that have extract one type and service endpoints list with no deletion data attach to them
-    - construct a list of services that have the mentioned `id`s as `id` and add as `type` and `service_endpoints`, the corresponding only elements that have no deletion time associated to them.
+    - take the services' id that have exactly one type and service endpoint's string with no deletion data attach to them
+    - construct a list of services that have the mentioned `id`s as `id` and add as `type` and `service_endpoint`, the corresponding only elements that have no deletion time associated to them.
 This leaves us with a list of active keys, and a list of active services.
 
 ### Constructing a JSON-LD DID document
@@ -717,16 +743,18 @@ If the list of keys is not empty, then we construct the DID document as follows:
   - For verification method type `"EcdsaSecp256k1VerificationKey2019"`, add `"https://w3id.org/security/suites/secp256k1-2019/v1"`
   - For verification method type `"Ed25519VerificationKey2020"`, add `"https://w3id.org/security/suites/ed25519-2020/v1"`
   - For service type `"DIDCommMessaging"`, add `"https://didcomm.org/messaging/contexts/v2"`
+  - For service type `"LinkedDomains"`, add "https://identity.foundation/.well-known/did-configuration/v1"
 - For each key that does not have usage `MASTER_KEY` nor `REVOCATION_KEY`, we create an object in the `verificationMethod` field. For each object:
     - The `id` is the key id prepended by the DID received as input and a `#` character separating the strings. For instance, for an identifier `key-1`, and `d` equals to `did:prism:abs` we will obtain the `id` equal to `did:prism:abs#key-1`
-    - The `type` is the `type` we see in the key 
-    - If the `type` field value is "EcdsaSecp256k1VerificationKey2019"
+    - If the `curve` field value associated to the key is `SECP_CURVE_NAME`
+      - The `type` is  "EcdsaSecp256k1VerificationKey2019"
       - The `controller` is the DID received for resolution, `d`
       - The `publicKeyJwk` is the JWK public key where:
           - `crv` is "secp256k1"
           - `kty` is "EC"
           - `x` and `y` are the corresponding coordinates of the key
-    - If the `type` field value is "EcdsaSecp256k1VerificationKey2019"
+    - If `curve` field value associated to the key is `ED255_CURVE_NAME`
+      - The `type` is "Ed25519VerificationKey2020"
       - The `controller` is the DID received for resolution, `d`
       - The `publicKeyJwk` is the JWK public key where:
           - `kty` is "OKP"
@@ -735,7 +763,6 @@ If the list of keys is not empty, then we construct the DID document as follows:
 - for each verification relationship, if there is a key usage matching to it, the verification relationship will make a reference by `id` to the respective key in `verificationMethod`
 - for each active service, the translation is trivial as the fields have a one on one correspondence to the W3C data model 
     - The `id` of each service do follow the same rule as `id`s of verification methods. This is, the translation adds the DID to resolve as prefix to the id known by `PRISM nodes` and use a `#` character to separate the strings
-    - In cases where the list of service endpoints for a service contains only one element, the service endpoint is represented with a string. When the list has more than one element, the list is represented as a JSON array
 
 ### Constructing the DID document metadata
 
