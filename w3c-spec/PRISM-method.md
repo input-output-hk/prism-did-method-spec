@@ -74,7 +74,9 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
 {
     "@context": [
       "https://www.w3.org/ns/did/v1",
-      "https://w3id.org/security/suites/secp256k1-2019/v1"
+      "https://w3id.org/security/suites/secp256k1-2019/v1",
+      "https://w3id.org/security/suites/ed25519-2020/v1",
+      "https://didcomm.org/messaging/contexts/v2"
     ],
     "id": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290",
     "verificationMethod": [
@@ -82,13 +84,22 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
         "id": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#authentication0",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "controller": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290",
-        "publicKeyBase58": "YhRTFePT8YkNdex5yZRCidpfHRjVNEfFT1wBAhrTPe3qzoj5JWKgJUSyuScza3q4zv7XEU73gp1gwuyyZM3MMDH"
+        "publicKeyJwk": {
+            "crv": "secp256k1",
+            "kty": "EC",
+            "x": "KDiRms8trMvdT4aaJbRtNxtDCYTvFJbstRrC3TgQNnc",
+            "y": "AUwPe-RV4D9c9WbVKHeg7-imv2ZVDX8hDAEkMDphpqU"
+         }
       },
       {
         "id": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#issuing0",
-        "type": "EcdsaSecp256k1VerificationKey2019",
+        "type": "Ed25519VerificationKey2020",
         "controller": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290",
-        "publicKeyBase58": "vCd23KG7JhWWkzqJQFZ2gb2B9PtmoHb9m2Q5tHRt4hRoue26AN1Z8ujm8g2T2HAYoPD1GCDq8g5RjunRVYowgBL"
+        "publicKeyJwk" : {
+          "kty" : "OKP"
+          "crv" : "Ed25519",
+          "x" : "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"
+        }
       }
     ],
     "authenticationMethod": [
@@ -100,8 +111,14 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
     "service": [
       {
         "id":"did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#linked-domain",
-        "type": "LinkedDomains", 
-        "serviceEndpoint": "https://foo.example.com"
+        "type": "DIDCommMessaging",
+        "serviceEndpoint": [ 
+          { 
+            "uri": "https://example.com/path", 
+            "accept": [ "didcomm/v2", "didcomm/aip2;env=rfc587" ], 
+            "routingKeys": ["did:example:somemediator#somekey"] 
+          }
+        ]
       }
     ]
   }
@@ -690,14 +707,20 @@ If the list of keys is not empty, then we construct the DID document as follows:
   - For verification method type `"Ed25519VerificationKey2020"`, add `"https://w3id.org/security/suites/ed25519-2020/v1"`
   - For service type `"DIDCommMessaging"`, add `"https://didcomm.org/messaging/contexts/v2"`
 - For each key that does not have usage `MASTER_KEY` nor `REVOCATION_KEY`, we create an object in the `verificationMethod` field. For each object:
-    - The `type` field value is "EcdsaSecp256k1VerificationKey2019"
-    - The `controller` is the DID received for resolution, `d`
-    - The `publicKeyJwk` is the JWK public key where:
-        - `crv` is "secp256k1"
-        - `kty` is "EC"
-        - `kid` is the `id` of the `PublicKey` (i.e. without the DID prefix and "#")
-        - `x` and `y` are the corresponding coordinates of the key
     - The `id` is the key id prepended by the DID received as input and a `#` character separating the strings. For instance, for an identifier `key-1`, and `d` equals to `did:prism:abs` we will obtain the `id` equal to `did:prism:abs#key-1`
+    - The `type` is the `type` we see in the key 
+    - If the `type` field value is "EcdsaSecp256k1VerificationKey2019"
+      - The `controller` is the DID received for resolution, `d`
+      - The `publicKeyJwk` is the JWK public key where:
+          - `crv` is "secp256k1"
+          - `kty` is "EC"
+          - `x` and `y` are the corresponding coordinates of the key
+    - If the `type` field value is "EcdsaSecp256k1VerificationKey2019"
+      - The `controller` is the DID received for resolution, `d`
+      - The `publicKeyJwk` is the JWK public key where:
+          - `kty` is "OKP"
+          - `crv` is "Ed25519"
+          - `x` is derived from the coordinates of the key
 - for each verification relationship, if there is a key usage matching to it, the verification relationship will make a reference by `id` to the respective key in `verificationMethod`
 - for each active service, the translation is trivial as the fields have a one on one correspondence to the W3C data model 
     - The `id` of each service do follow the same rule as `id`s of verification methods. This is, the translation adds the DID to resolve as prefix to the id known by `PRISM nodes` and use a `#` character to separate the strings
