@@ -33,8 +33,8 @@ This document describes the first version of the `prism` DID method. Each versio
 | `MAX_SERVICE_ENDPOINT_SIZE` | Maximum number of characters for a `serviceEndpoint` field value. | 300 |
 | `MAX_SERVICE_NUMBER` | Maximum number of active services a DID Document can have at the same time. | 50 |
 | `MAX_VERIFICATION_METHOD_NUMBER` | Maximum number of active verification methods a DID Document can have at the same time. | 50 |
-| `SECP_CURVE_NAME` | String identifier for the SECP256K1 eliptic curve | "secp256k1" |
-| `ED255_CURVE_NAME` | String identifier for the ED25519 eliptic curve | "ed25519" 
+| `SECP256K1_CURVE_NAME` | String identifier for the SECP256K1 eliptic curve | "secp256k1" |
+| `ED25519_CURVE_NAME` | String identifier for the ED25519 eliptic curve | "ed25519" 
 
 ## DID Method Name
 
@@ -319,7 +319,7 @@ Below we see the rules to construct a well-formed `CreateDIDOperation`, these ru
        - a URI 
        - a JSON object
        - a non-empty JSON array of URIs and/or JSON objects
-       - all mentioned URIs MUST conform to [RFC3986](https://www.w3.org/TR/did-core/#bib-rfc3986) and normalized according to the [Normalization and Comparison rules in RFC3986 and to any normalization](https://www.rfc-editor.org/rfc/rfc3986#section-6) rules in its applicable URI scheme specification
+       - all mentioned URIs MUST conform to [RFC3986](https://www.rfc-editor.org/rfc/rfc3986) and normalized according to the [Normalization and Comparison rules in RFC3986 and to any normalization](https://www.rfc-editor.org/rfc/rfc3986#section-6) rules in its applicable URI scheme specification
     - The `service_endpoint` value MUST not exceed `MAX_SERVICE_ENDPOINT_SIZE` characters in length
 - The `public_keys` field MUST contain at least one `PublicKey` message for which its `usage` field MUST be `MASTER_KEY`
   - `public_keys` MUST not exceed `MAX_VERIFICATION_METHOD_NUMBER` elements.
@@ -333,11 +333,11 @@ Below we see the rules to construct a well-formed `CreateDIDOperation`, these ru
         - `KEY_AGREEMENT_KEY`, `AUTHENTICATION_KEY`, `CAPABILITY_INVOCATION_KEY` and `CAPABILITY_DELEGATION_KEY`: represent their mirror verification relationship according to DID core specification.
     - `key_data` field MUST not be empty
         - If it contains an `ECKeyData`
-            - The `curve` MUST be either `SECP_CURVE_NAME` or `ED25519_CURVE_NAME`
+            - The `curve` MUST be either `SECP256K1_CURVE_NAME` or `ED25519_CURVE_NAME`
             - The `x` MUST contain a valid `x` coordinate of the public key
             - The `y` MUST contain a valid `y` coordinate of the public key
         - If it contains a `CompressedECKeyData` 
-            - The `curve` MUST be the string `SECP_CURVE_NAME` or `ED25519_CURVE_NAME`
+            - The `curve` MUST be the string `SECP256K1_CURVE_NAME` or `ED25519_CURVE_NAME`
             - The `x` MUST contain a valid `x` coordinate of the public key plus the extra byte indicating the sign of the `y` axis. **TODO: add encoding reference**
         
 **Signing and submission**
@@ -746,14 +746,14 @@ If the list of keys is not empty, then we construct the DID document as follows:
   - For service type `"LinkedDomains"`, add "https://identity.foundation/.well-known/did-configuration/v1"
 - For each key that does not have usage `MASTER_KEY` nor `REVOCATION_KEY`, we create an object in the `verificationMethod` field. For each object:
     - The `id` is the key id prepended by the DID received as input and a `#` character separating the strings. For instance, for an identifier `key-1`, and `d` equals to `did:prism:abs` we will obtain the `id` equal to `did:prism:abs#key-1`
-    - If the `curve` field value associated to the key is `SECP_CURVE_NAME`
+    - If the `curve` field value associated to the key is `SECP256K1_CURVE_NAME`
       - The `type` is  "EcdsaSecp256k1VerificationKey2019"
       - The `controller` is the DID received for resolution, `d`
       - The `publicKeyJwk` is the JWK public key where:
           - `crv` is "secp256k1"
           - `kty` is "EC"
           - `x` and `y` are the corresponding coordinates of the key
-    - If `curve` field value associated to the key is `ED255_CURVE_NAME`
+    - If `curve` field value associated to the key is `ED25519_CURVE_NAME`
       - The `type` is "Ed25519VerificationKey2020"
       - The `controller` is the DID received for resolution, `d`
       - The `publicKeyJwk` is the JWK public key where:
