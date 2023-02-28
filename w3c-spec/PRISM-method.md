@@ -698,15 +698,18 @@ If the list of keys is not empty, then we construct the DID document as follows:
 
 In addition to the DID document, the DID resolution process also returns DID document metadata.
 
-- If `d` is in long form, DID document metadata MUST contain a `canonicalId` property with the short form DID as its value.
-- If `d` is in short form, DID document metadata MUST NOT contain a `canonicalId` property.
+- If `d` is in long form and has been published, DID document metadata MUST contain a `canonicalId` property with the short form DID as its value.
+- If `d` is in short form or has not been published, DID document metadata MUST NOT contain a `canonicalId` property.
 - DID document metadata MUST contain a `created` property with the timestamp of the Cardano block that contained the first valid `SignedAtalaOperation` with a `CreateDIDOperation` that created the DID.
-- DID document metadata MUST contain an `updated` property with the timestamp of the Cardano block that contained the latest valid `SignedAtalaOperation` which changed the DID's internal state.
-- DID document metadata MUST contain a `versionId` property with the hash of the latest valid `SignedAtalaOperation` which created the DID or changed the DID's internal state.
+- DID document metadata MUST contain an `updated` property with the timestamp of the Cardano block that contained the latest valid `SignedAtalaOperation` that changed the DID's internal state.
+- DID document metadata MUST contain a `versionId` property with the hash of the `AtalaOperation` contained in the latest valid `SignedAtalaOperation` that created the DID or changed the DID's internal state.
 - DID document metadata MUST contain a `deactivated` property with the boolean value `true` if the DID has been deactivated with a valid `DeactivateDIDOperation`. Otherwise, this property is OPTIONAL, but if included, MUST have the boolean value `false`.
 - Resolvers MAY add additional method-specific DID document metadata properties, such as
-  - The position of the Cardano transaction in the `AtalaBlock`
-  - The position of the `SignedAtalaOperation` in the `AtalaBlock`
+  - `cardanoTransactionPosition`: The position of the Cardano transaction in the Cardano block (i.e. Atala block sequence number)
+  - `cardanoOperationPosition`: The position of the `SignedAtalaOperation` in the `AtalaBlock`
+  - `originTxId`: The Cardano transaction id of the valid `SignedAtalaOperation` that carried the `CreateDIDOperation` that anchored the DID on-chain (if published)
+  - `updatedTxId`: The Cardano transaction id of the latest operation that changed the DID's internal state
+  - `deactivatedTxId`: Similar for deactivation
 
 Example:
 
