@@ -71,7 +71,7 @@ In the following sections we will describe more details about the state mentione
 
 ## DID Documents
 
-The `prism` DID method allows to create fairly expressive DID documents. In this first version, the method supports the creation of DID documents that contain arbitrary services. With respect to verification methods, all W3C verification relationships are supported (namely, authentication, key agreement, assertion, capability invocation and capability delegation). The supported verification method type is `EcdsaSecp256k1VerificationKey2019` where keys are expressed as JWK. In future versions, more verification method types will be supported.
+The `prism` DID method allows to create fairly expressive DID documents. In this first version, the method supports the creation of DID documents that contain arbitrary services. With respect to verification methods, all W3C verification relationships are supported (namely, authentication, key agreement, assertion, capability invocation and capability delegation). The supported verification method type is `JsonWebKey2020` where keys are expressed as JWK. In future versions, more verification method types will be supported.
 
 
 ### EXAMPLE: DID document (JSON-LD)
@@ -80,8 +80,7 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
 {
     "@context": [
       "https://www.w3.org/ns/did/v1",
-      "https://w3id.org/security/suites/secp256k1-2019/v1",
-      "https://w3id.org/security/suites/ed25519-2020/v1",
+      "https://w3id.org/security/suites/jws-2020/v1",
       "https://didcomm.org/messaging/contexts/v2",
       "https://identity.foundation/.well-known/did-configuration/v1"
     ],
@@ -89,7 +88,7 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
     "verificationMethod": [
       {
         "id": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#authentication0",
-        "type": "EcdsaSecp256k1VerificationKey2019",
+        "type": "JsonWebKey2020",
         "controller": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290",
         "publicKeyJwk": {
             "crv": "secp256k1",
@@ -100,7 +99,7 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
       },
       {
         "id": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#issuing0",
-        "type": "Ed25519VerificationKey2020",
+        "type": "JsonWebKey2020",
         "controller": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290",
         "publicKeyJwk" : {
           "kty" : "OKP",
@@ -740,21 +739,20 @@ If the list of keys is not empty, then we construct the DID document as follows:
         ]
       ```
 - Depending on the verification method types and services types in the DID document, additional entries MUST be added to the `@context`, such as:
-  - For verification method type `"EcdsaSecp256k1VerificationKey2019"`, add `"https://w3id.org/security/suites/secp256k1-2019/v1"`
-  - For verification method type `"Ed25519VerificationKey2020"`, add `"https://w3id.org/security/suites/ed25519-2020/v1"`
+  - For verification method type `"JsonWebKey2020"`, add `"https://w3id.org/security/suites/jws-2020/v1"`
   - For service type `"DIDCommMessaging"`, add `"https://didcomm.org/messaging/contexts/v2"`
   - For service type `"LinkedDomains"`, add "https://identity.foundation/.well-known/did-configuration/v1"
 - For each key that does not have usage `MASTER_KEY` nor `REVOCATION_KEY`, we create an object in the `verificationMethod` field. For each object:
     - The `id` is the key id prepended by the DID received as input and a `#` character separating the strings. For instance, for an identifier `key-1`, and `d` equals to `did:prism:abs` we will obtain the `id` equal to `did:prism:abs#key-1`
     - If the `curve` field value associated to the key is `SECP256K1_CURVE_NAME`
-      - The `type` is  "EcdsaSecp256k1VerificationKey2019"
+      - The `type` is  "JsonWebKey2020"
       - The `controller` is the DID received for resolution, `d`
       - The `publicKeyJwk` is the JWK public key where:
           - `crv` is "secp256k1"
           - `kty` is "EC"
           - `x` and `y` are the corresponding coordinates of the key
     - If `curve` field value associated to the key is `ED25519_CURVE_NAME`
-      - The `type` is "Ed25519VerificationKey2020"
+      - The `type` is "JsonWebKey2020"
       - The `controller` is the DID received for resolution, `d`
       - The `publicKeyJwk` is the JWK public key where:
           - `kty` is "OKP"
