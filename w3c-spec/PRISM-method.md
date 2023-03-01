@@ -34,7 +34,8 @@ This document describes the first version of the `prism` DID method. Each versio
 | `MAX_SERVICE_NUMBER` | Maximum number of active services a DID Document can have at the same time. | 50 |
 | `MAX_VERIFICATION_METHOD_NUMBER` | Maximum number of active verification methods a DID Document can have at the same time. | 50 |
 | `SECP256K1_CURVE_NAME` | String identifier for the SECP256K1 eliptic curve | "secp256k1" |
-| `ED25519_CURVE_NAME` | String identifier for the ED25519 eliptic curve | "ed25519" 
+| `ED25519_CURVE_NAME` | String identifier for the ED25519 eliptic curve | "ed25519" |
+| `X25519_CURVE_NAME` | String identifier for the Curve25519 eliptic curve | "curve25519" |
 
 ## DID Method Name
 
@@ -71,7 +72,7 @@ In the following sections we will describe more details about the state mentione
 
 ## DID Documents
 
-The `prism` DID method allows to create fairly expressive DID documents. In this first version, the method supports the creation of DID documents that contain arbitrary services. With respect to verification methods, all W3C verification relationships are supported (namely, authentication, key agreement, assertion, capability invocation and capability delegation). The supported verification method type is `JsonWebKey2020` where keys are expressed as JWK. In future versions, more verification method types will be supported.
+The `prism` DID method allows to create fairly expressive DID documents. In this first version, the method supports the creation of DID documents that contain arbitrary services. With respect to verification methods, all W3C verification relationships are supported (namely, authentication, key agreement, assertion, capability invocation and capability delegation). The supported verification method type is `JsonWebKey2020` where keys are expressed as JWK. The supported keys however are restricted to `ED25519_CURVE_NAME`, `SECP256K1_CURVE_NAME` and `X25519_CURVE_NAME`. In future versions, more verification method types and keys will be supported.
 
 
 ### EXAMPLE: DID document (JSON-LD)
@@ -106,6 +107,16 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
           "crv" : "Ed25519",
           "x" : "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"
         }
+      },
+      {
+        "id": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#key-agreement0",
+        "type": "JsonWebKey2020",
+        "controller": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290",
+        "publicKeyJwk": {
+          "kty": "OKP",
+          "crv": "X25519", 
+          "x": "pE_mG098rdQjY3MKK2D5SUQ6ZOEW3a6Z6T7Z4SgnzCE"
+        }
       }
     ],
     "authenticationMethod": [
@@ -113,6 +124,9 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
     ],
     "assertionMethod": [
       "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#issuing0"
+    ],
+    "keyAgreement": [
+      "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#key-agreement0"
     ],
     "service": [
       {
@@ -333,12 +347,12 @@ Below we see the rules to construct a well-formed `CreateDIDOperation`, these ru
         - `KEY_AGREEMENT_KEY`, `AUTHENTICATION_KEY`, `CAPABILITY_INVOCATION_KEY` and `CAPABILITY_DELEGATION_KEY`: represent their mirror verification relationship according to DID core specification.
     - `key_data` field MUST not be empty
         - If it contains an `ECKeyData`
-            - The `curve` MUST be either `SECP256K1_CURVE_NAME` or `ED25519_CURVE_NAME`
+            - The `curve` MUST be one of `SECP256K1_CURVE_NAME`, `ED25519_CURVE_NAME` or `X25519_CURVE_NAME`
             - The `x` MUST contain a valid `x` coordinate of the public key
             - The `y` MUST contain a valid `y` coordinate of the public key
         - If it contains a `CompressedECKeyData` 
-            - The `curve` MUST be the string `SECP256K1_CURVE_NAME` or `ED25519_CURVE_NAME`
-            - The `x` MUST contain a valid `x` coordinate of the public key plus the extra byte indicating the sign of the `y` axis. **TODO: add encoding reference**
+            - The `curve` MUST be one of `SECP256K1_CURVE_NAME`, `ED25519_CURVE_NAME` or `X25519_CURVE_NAME`
+            - The `x` MUST contain a valid compressed representation of the public key in accordance to the `curve` value
 - `context` field MUST contain a list of strings. Each string represents additional `@context` values that the resolver will use to produce JSON-LD output during DID Document generation
 
 **Signing and submission**
@@ -776,6 +790,13 @@ If the list of keys is not empty, then we construct the DID document as follows:
       - The `publicKeyJwk` is the JWK public key where:
           - `kty` is "OKP"
           - `crv` is "Ed25519"
+          - `x` is derived from the coordinates of the key
+    - If `curve` field value associated to the key is `X25519_CURVE_NAME`
+      - The `type` is "JsonWebKey2020"
+      - The `controller` is the DID received for resolution, `d`
+      - The `publicKeyJwk` is the JWK public key where:
+          - `kty` is "OKP"
+          - `crv` is "X25519"
           - `x` is derived from the coordinates of the key
 - for each verification relationship, if there is a key usage matching to it, the verification relationship will make a reference by `id` to the respective key in `verificationMethod`
 - for each active service, the translation is trivial as the fields have a one on one correspondence to the W3C data model 
