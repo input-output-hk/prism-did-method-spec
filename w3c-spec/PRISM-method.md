@@ -103,7 +103,7 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
         "type": "Ed25519VerificationKey2020",
         "controller": "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290",
         "publicKeyJwk" : {
-          "kty" : "OKP"
+          "kty" : "OKP",
           "crv" : "Ed25519",
           "x" : "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"
         }
