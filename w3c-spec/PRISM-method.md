@@ -248,6 +248,7 @@ message CreateDIDOperation {
         reserved 1; // Removed DID id field which is empty on creation
         repeated PublicKey public_keys = 2; // The keys that belong to this DID Document.
         repeated Service services = 3; // The list of services that belong to this DID Document.
+        repeated string context = 4; // The list of @context values to consider on JSON-LD representations
     }
 }
 
@@ -338,7 +339,8 @@ Below we see the rules to construct a well-formed `CreateDIDOperation`, these ru
         - If it contains a `CompressedECKeyData` 
             - The `curve` MUST be the string `SECP256K1_CURVE_NAME` or `ED25519_CURVE_NAME`
             - The `x` MUST contain a valid `x` coordinate of the public key plus the extra byte indicating the sign of the `y` axis. **TODO: add encoding reference**
-        
+- `context` field MUST contain a list of strings. Each string represents additional `@context` values that the resolver will use to produce JSON-LD output during DID Document generation
+
 **Signing and submission**
 1. Once the controller created the `CreateDIDOperation`, he can construct an `AtalaOperation` and sign it using the `SIGNATURE_ALGORITHM`. With that, construct a `SignedAtalaOperation` that contains the generated signature in the `signature` field; the `AtalaOperation` in the `operation` field, and the key identifier of the master key used to generate this signature in `signed_with`. Note that the `usage` of the key used to sign the operation MUST be `MASTER_KEY`
 2. With the `SignedAtalaOperation` the user can decide to create an `AtalaBlock` and `AtalaObject` messages, and submit a transaction himself containing the operation. Alternatively, he can gather more operations before submitting a transaction in order to save fees.
@@ -409,6 +411,7 @@ message UpdateDIDAction {
         AddServiceAction add_service = 3; // Used to add a new service to a DID,
         RemoveServiceAction remove_service = 4; // Used to remove an existing service from a DID,
         UpdateServiceAction update_service = 5; // Used to Update a list of service endpoints of a given service on a given DID.
+        PatchContextAction patch_context = 6; // Used to Update a list of `@context` strings used during resolution for a given DID.
     }
 }
 
@@ -436,6 +439,10 @@ message UpdateServiceAction {
     // Will replace all existing service endpoints of the service with provided ones
     string service_endpoints = 3;
 }
+
+message PatchContextAction {
+    repeated string context = 1; // The list of strings to use by resolvers during resolution when producing a JSON-LD output
+}
 ```
 
 **Construction rules**
@@ -452,7 +459,7 @@ message UpdateServiceAction {
         - it MUST NOT be the case that both, the `type` field and `service_endpoint` field are empty. This is, at least one of this field MUST be correctly populated
         - the `type` field, if present, MUST follow the same rules of the `type` field of the `Service` message. The `type` represents the new type (if present) that will replace the existing one.
         - the `service_endpoints` field, if non empty, MUST conform the same rules as the `service_endpoint` field of the `Service` message
-
+    - `PatchContextAction`, the `context` field MUST contain a list of strings
 
 **Signing and submission**
 1. Once the controller created the `UpdateDIDOperation`, he can construct an `AtalaOperation` and sign it using the `SIGNATURE_ALGORITHM`. With that, construct a `SignedAtalaOperation` that contains the generated signature in the `signature` field; the `AtalaOperation` in the `operation` field, and the key identifier of the master key used to generate this signature in `signed_with`
@@ -549,13 +556,14 @@ Once the Cardano block reaches a `SERCURE_DEPTH` of confirmations, `PRISM nodes`
 
 As they evaluate confirmed transactions, nodes extract the `AtalaObject` messages from metadata (when found), and process them in the order they are found. The nodes MUST validate that `block_byte_length` and `block_operation_count` match the encoded `AtalaBlock` byte size and elements length respectively. If any validation fails, the object is ignored and no operation is processed for this object.
 
-Once the object is validated, each `PRISM node` will proceed to inspect the operations inside the `AtalaBlock`. Operations MUST be processed in the order they have in the `AtalaBlock`. If any operation fails validation rules, then the operation MUST be ignored, and the nodes MUST proceed with the next operations (if any) in the `AtalaBlock`. 
+Once the object is validated, each `PRISM node` will proceed to inspect the operations inside the `AtalaBlock`. Operations MUST be processed in the order they have in the `AtalaBlock`. If an operation fails the validation rules, then the operation MUST be ignored, and the nodes MUST proceed with the next operations (if any) in the `AtalaBlock`. 
 
 ### PRISM Nodes internal map
 
 When `PRISM nodes` process operations, they update an internal map of information.
 The map takes DIDs, and maps them to:
 - a hash that represents the last operation that affected the DID
+- a list of strings representing the context auxiliary information
 - keys' information
 - services' information
 
@@ -569,7 +577,8 @@ The keys and services information consist of:
 For example, when a DID is created, an entry is added to the map, that adds the DID and maps it to the initial keys and services described in the corresponding `CreateDIDOperation`. This is:
 - it adds the list of keys and set their timestamp indicating when they were added on, it also set to each key the transaction id of the transaction that carried the said operation and
 - for each service it adds the singleton lists with `type` and `service_endpoint` values with a corresponding "added on" timestamp and transaction id to each entity.
-- the hash of the `AtalaOperation` that wrapped the corresponding `CreateDIDOperation`
+- if there is a non-empty list in `context`, it also associates it to the DID.
+- it also associates the hash of the `AtalaOperation` that wrapped the corresponding `CreateDIDOperation` to the DID.
 
 We will describe the structure of these timestamps, and the precise effect changes operation induces in these map in the next sections.
 
@@ -602,6 +611,7 @@ The `PRISM node` will add to its map, the DID derived from the create operation 
 - the list of `Service`s, for each service
     - it adds a singleton list with the type with the corresponding operation timestamp as it addition timestamp attach to it.
     - it adds a singleton list with the service endpoint value with the corresponding operation timestamp as it addition timestamp attach to it. 
+- if `context` is not empty, it associates to this DID the value of `context` as auxiliary data for the resolver.
 - It will also associate to this DID the hash of the `AtalaOperation` that contains the `CreateDIDOperation`. We will refer to this hash as its last operation hash.
 
 
@@ -665,6 +675,14 @@ The node updates the map, and adds to the service of the corresponding DID, and 
 - If the `UpdateServiceAction` has a non empty `service_endpoints`, we will refer to it as `new_services`
     - The node adds the operation timestamp to `current_endpoints` as its revocation time, and adds `new_endpoints` to the corresponding list of service endpoints with the operation timestamp as its addition timestamp.
 
+#### Processing PatchContextAction 
+
+If the DID to update has an empty context associated to it in the map:
+- the field `context` MUST NOT be empty
+
+**Update of the internal map**
+- If `context` is empty, the DID removes the previous context list associated to it.
+- It `context` is not empty, the DID replaces the old list for the new one on its map.
 
 ### Processing of DeactivateDIDOperations
 
@@ -680,7 +698,6 @@ For all keys and services that do not have a revocation/deletion timestamp, node
 The new last operation hash MUST be the hash of the `AtalaOperation` that wrapped the corresponding `DeactivateDIDOperation`
 
 Note that this marks all keys (including `MASTER_KEY` keys) as deleted. Meaning that no further updates will be possible on the corresponding DID.
-d
 
 ### Processing of ProtocolVersionUpdateOperations
 
@@ -704,7 +721,7 @@ Given the DID `d` that a user is resolving:
 - If `d` is a short form DID`
     - Any `PRISM node` will look in its internal map in search for `d`
         - If `d` is not found, the node returns an unknown DID error
-        - If `d` is found, the node will return to the user the content of the map associated to `d`. This is, the list of keys and services information associated to `d` with all the timestamp information
+        - If `d` is found, the node will return to the user the content of the map associated to `d`. This is, the list of keys and services information associated to `d` with all the timestamp information. If non-empty, it will also return the list of `context` strings associated to the DID.
 - If `d` is in long form, `PRISM nodes` MUST:
     - extract the short form DID from the DID
     - validate the short form DID correspondence (i.e. the encoded operation must match the expected hash), and validates that the decoded operation is a well constructed `AtalaOperation` that contains a `CreateDIDOperation` 
@@ -723,10 +740,11 @@ In order to transform this returned information to a DID document, we do as foll
     - take the services' id that have exactly one type and service endpoint's string with no deletion data attach to them
     - construct a list of services that have the mentioned `id`s as `id` and add as `type` and `service_endpoint`, the corresponding only elements that have no deletion time associated to them.
 This leaves us with a list of active keys, and a list of active services.
+- If we obtain a non-empty list of contexts, we keep it without changes
 
 ### Constructing a JSON-LD DID document
 
-If both of the lists are empty, we have that the DID has been deactivated, and we can return an empty JSON object. 
+If the services' and keys' lists obtained in the previous section are empty, we have that the DID has been deactivated, and we can return an empty JSON object. 
 
 NOTE: The protocol rules guarantee that if the list of keys is empty, then the list of services must be empty. If this is not the case, then this indicates an implementation error.
 
@@ -738,10 +756,11 @@ If the list of keys is not empty, then we construct the DID document as follows:
           "https://www.w3.org/ns/did/v1"
         ]
       ```
-- Depending on the verification method types and services types in the DID document, additional entries MUST be added to the `@context`, such as:
-  - For verification method type `"JsonWebKey2020"`, add `"https://w3id.org/security/suites/jws-2020/v1"`
-  - For service type `"DIDCommMessaging"`, add `"https://didcomm.org/messaging/contexts/v2"`
-  - For service type `"LinkedDomains"`, add "https://identity.foundation/.well-known/did-configuration/v1"
+- Depending on the verification method types and services types in the DID document, additional entries MUST be added to the `@context` after "https://www.w3.org/ns/did/v1", such as:
+    - For verification method type `"JsonWebKey2020"`, add `"https://w3id.org/security/suites/jws-2020/v1"`
+    - For service type `"DIDCommMessaging"`, add `"https://didcomm.org/messaging/contexts/v2"`
+    - For service type `"LinkedDomains"`, add "https://identity.foundation/.well-known/did-configuration/v1"
+- If the user added more services' types not covered in the above list, he is responsible for adding their corresponding contexts in the `context` list. If there is a list of context strings associated to the DID, the resolver MUST append it to the end of the `@context` constructed so far.
 - For each key that does not have usage `MASTER_KEY` nor `REVOCATION_KEY`, we create an object in the `verificationMethod` field. For each object:
     - The `id` is the key id prepended by the DID received as input and a `#` character separating the strings. For instance, for an identifier `key-1`, and `d` equals to `did:prism:abs` we will obtain the `id` equal to `did:prism:abs#key-1`
     - If the `curve` field value associated to the key is `SECP256K1_CURVE_NAME`
