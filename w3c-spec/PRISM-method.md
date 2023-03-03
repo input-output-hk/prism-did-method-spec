@@ -179,7 +179,7 @@ In the following sections we will describe in detail the format of operations an
 The `prism` method represents DID operations such as creation, updates and deactivations using [Protocol Buffers](https://developers.google.com/protocol-buffers).
 Each operation is defined as a message, which we will describe in the next sub-sections.
 
-At a high level, operations represent actions upon DIDs (i.e. Create, Update, Deactivate). Operations are batched in `blocks`, and blocks are wrapped in `objects` that include some information about the blocks. Each object is attached to a transaction's metadata in the Cardano network. 
+At a high level, operations represent actions upon DIDs (i.e. Create, Update, Deactivate). Operations are batched in `blocks`, and blocks are wrapped in `objects`. Each object is attached to a transaction's metadata in the Cardano network. 
 Users construct these operations and submit them to the blockchain. Conversely `PRISM nodes` read Cardano transactions, examine their metadata, they extract (when present) encoded objects. The objects contains blocks, and the block contains a sequence of DID operations. `PRISM nodes` validate and interpret these operations, which allow them to build their shared global view of the map of DIDs to DID documents.
 
 Below, we present the main protobuf messages mentioned before. For purpose of making the reading simple, we moved some protobuf definitions to an Appendix at the end of this specification. We will describe for each operation how users must construct them to be considered valid.
@@ -197,23 +197,23 @@ message AtalaBlock {
 }
 ```
 
-As we mentioned before, `blocks` are wrapped inside `objects`, which add some information about them:
+As we mentioned before, `blocks` are wrapped inside `objects`, which will add some information about them in the planned future:
 
 ```protobuf
 // Wraps an AtalaBlock and its metadata.
 message AtalaObject {
-  reserved 1; // Removed block_hash field.
+  reserved 1, 2, 3; // Removed block_hash field.
   reserved "block_hash";
+  reserved "block_operation_count";
+  reserved "block_byte_length";
 
-  int32 block_operation_count = 2; // Number of operations in the block.
-  int32 block_byte_length = 3; // Byte length of the block.
   AtalaBlock block_content = 4; // The block content.
 }
 ```
 
 When a user wants to perform DID operations, he:
 - Puts them in the desired order inside an `AtalaBlock`, 
-- wraps the block in an `AtalaObject`, adding the `AtalaBlock` corresponding size in bytes and count of operations in `block_byte_length` and `block_operation_count` fields respectively.
+- wraps the block in an `AtalaObject`.
 - Encodes the `AtalaObject` inside the metadata of a Cardano transaction (see Appendix A for encoding details)
 - Sends the transaction with metadata to the Cardano blockchain
 
@@ -253,7 +253,7 @@ Lets move to the specific description of each operation
 
 ### Create DID
 
-In order to create a DID, the controller will construct a `CreateDIDOperation` message using the following definitions (see Appendix B to find the complementary `LedgerData` message)
+In order to create a DID, the controller will construct a `CreateDIDOperation` message using the following definitions.
 
 ```protobuf
 // The operation to create a public DID.
@@ -271,11 +271,9 @@ message CreateDIDOperation {
 
 // Represents a public key with metadata, necessary for a DID document.
 message PublicKey {
-    reserved 3, 4;
+    reserved 3, 4, 5, 6;
     string id = 1; // The key identifier within the DID Document.
     KeyUsage usage = 2; // The key's purpose.
-    LedgerData added_on = 5; // (Only present during resolution) The ledger details related to the event that added the key to the DID Document.
-    LedgerData revoked_on = 6; // (Only present during resolution) The ledger details related to the event that deleted the key from the DID Document.
 
     // The key's representation.
     oneof key_data {
@@ -314,8 +312,6 @@ message Service {
     string id = 1;
     string type = 2;
     string service_endpoint = 3;
-    LedgerData added_on = 4; // (only present in DID resolution) The ledger details related to the event that added the service to the DID Document.
-    LedgerData deleted_on = 5; // (only present in DID resolution) The ledger details related to the event that deleted the service from the DID Document.
 }
 ```
 
@@ -327,7 +323,6 @@ Below we see the rules to construct a well-formed `CreateDIDOperation`, these ru
 - Each element of `public_keys` and `services` fields MUST be constructed correctly
 - `services` can be empty. The list MUST not exceed `MAX_SERVICE_NUMBER` elements.
 - For each `Service` message in the list:
-    - The fields `added_on` and `deleted_on` MUST be empty
     - The `type` field MUST be a string or a non empty JSON array of strings. 
       - The `type` value MUST not start nor end with whitespaces, and MUST have at least a non whitespace character. 
       - The `type` value MUST not exceed `MAX_TYPE_SIZE` characters in length.
@@ -571,7 +566,7 @@ Below, we describe how `PRISM nodes` process Cardano blocks, `AtalaObject`s, `At
 
 ### Processing of Atala objects and blocks
 
-As they evaluate confirmed transactions, nodes extract the `AtalaObject` messages from metadata (when found), and process them in the order they are found. The nodes MUST validate that `block_byte_length` and `block_operation_count` match the encoded `AtalaBlock` byte size and elements length respectively. If any validation fails, the object is ignored and no operation is processed for this object.
+As they evaluate confirmed transactions, nodes extract the `AtalaObject` messages from metadata (when found), and process them in the order they are found. The nodes MUST validate that the `AtalaBlock` inside it is not empty. If it is empty, the object is ignored.
 
 Once the object is validated, each `PRISM node` will proceed to inspect the operations inside the `AtalaBlock`. Operations MUST be processed in the order they have in the `AtalaBlock`. If an operation fails the validation rules, then the operation MUST be ignored, and the nodes MUST proceed with the next operations (if any) in the `AtalaBlock`. 
 
