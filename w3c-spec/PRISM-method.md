@@ -38,7 +38,7 @@ This document describes the first version of the `prism` DID method. Each versio
 | `ED25519_CURVE_NAME` | String identifier for the ED25519 eliptic curve | "ed25519" |
 | `X25519_CURVE_NAME` | String identifier for the Curve25519 eliptic curve | "x25519" |
 
-`*` This values will be filled in once the mainnet deployment is confirmed.
+`*` These values will be filled in once the mainnet deployment is confirmed.
 
 ## DID Method Name
 
@@ -376,7 +376,7 @@ To do so:
 This DID, called Long Form DID, can later be published (by posting the corresponding `CreateDIDOperation` as described in the previous section), and updated by the controller. In the meantime, the user will be able to use it without submitting anything to the blockchain.
 
 Note that each long form DID in the `prism` DID method has a unique short form associated DID. We can validate the correspondence by computing the hash of the encoded `AtalaOperation` in the long form DID, and checking its equality with the last section of the short form DID.
-Also note, a that short form DID is a prefix of its corresponding long form DID. 
+Also note, that a short form DID is a prefix of its corresponding long form DID. 
 
 
 ### Read DID
@@ -742,7 +742,7 @@ Given the DID `d` that a user is resolving:
 
 - If `d` is a short form DID`
     - Any `PRISM node` will look in its internal map in search for `d`
-        - If `d` is not found, the node returns an `notFound` error
+        - If `d` is not found, the node returns a `notFound` error
         - If `d` is found, the node will return to the user the content of the map associated to `d`. This is, the list of keys and services information associated to `d` with all the timestamp information. If non-empty, it will also return the list of `context` strings associated to the DID.
 - If `d` is in long form, `PRISM nodes` MUST:
     - extract the short form DID from the DID
