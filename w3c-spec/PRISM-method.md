@@ -970,16 +970,6 @@ In this section, we can find all the protobuf definitions  referenced in previou
 
 ```protobuf
 
-// Includes timestamping details about a blockchain's block.
-message TimestampInfo {
-    reserved 1; // Removed blockTimestamp_deprecated field
-    reserved "blockTimestamp_deprecated";
-
-    uint32 block_sequence_number = 2; // The transaction index inside the underlying block.
-    uint32 operation_sequence_number = 3; // The operation index inside the AtalaBlock.
-    google.protobuf.Timestamp block_timestamp = 4; // The timestamp provided from the underlying blockchain.
-}
-
 /**
  * Represent a block that holds operations.
  */
@@ -992,11 +982,11 @@ message AtalaBlock {
  * Wraps an AtalaBlock and its metadata.
  */
 message AtalaObject {
-  reserved 1; // Removed block_hash field.
+  reserved 1, 2, 3; 
   reserved "block_hash";
-
-  int32 block_operation_count = 2; // Number of operations in the block.
-  int32 block_byte_length = 3; // Byte length of the block.
+  reserved "block_operation_count"; // Number of operations in the block.
+  reserved "block_byte_length"; // Byte length of the block.
+  
   AtalaBlock block_content = 4; // The block content.
 }
 
@@ -1034,11 +1024,9 @@ message CompressedECKeyData {
  * Represents a public key with metadata, necessary for a DID document.
  */
 message PublicKey {
-    reserved 3, 4;
+    reserved 3, 4, 5, 6;
     string id = 1; // The key identifier within the DID Document.
     KeyUsage usage = 2; // The key's purpose.
-    LedgerData added_on = 5; // The ledger details related to the event that added the key to the DID Document.
-    LedgerData revoked_on = 6; // The ledger details related to the event that revoked the key to the DID Document.
 
     // The key's representation.
     oneof key_data {
@@ -1166,19 +1154,9 @@ message SignedAtalaOperation {
     AtalaOperation operation = 3; // The operation that was signed.
 }
 
-// Ledger data associated to a protocol event.
-message LedgerData {
-    string transaction_id = 1; // ID of the transaction.
-    Ledger ledger = 2; // Ledger the transaction was published to.
-    TimestampInfo timestamp_info = 3; // The timestamp of the protocol event.
-}
-
 message Service {
     string id = 1;
     string type = 2;
     string service_endpoint = 3;
-
-    LedgerData added_on = 4; // (when present) The ledger details related to the event that added the service.
-    LedgerData deleted_on = 5; // (when present) The ledger details related to the event that revoked the service.
 }
 ```
