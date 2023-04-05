@@ -1045,6 +1045,7 @@ message CreateDIDOperation {
         reserved 1; // Removed DID id field which is empty on creation
         repeated PublicKey public_keys = 2; // The keys that belong to this DID Document.
         repeated Service services = 3; // The list of services that belong to this DID Document.
+        repeated string context = 4; // The list of @context values to consider on JSON-LD representations
     }
 }
 
