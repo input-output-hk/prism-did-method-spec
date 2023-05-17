@@ -33,7 +33,7 @@ This document describes the first version of the `prism` DID method. Each versio
 | `MAX_TYPE_SIZE` | Maximum number of characters for a `type` field value. | 100 |
 | `MAX_SERVICE_ENDPOINT_SIZE` | Maximum number of characters for a `serviceEndpoint` field value. | 300 |
 | `MAX_SERVICE_NUMBER` | Maximum number of active services a DID Document can have at the same time. | 50 |
-| `MAX_VERIFICATION_METHOD_NUMBER` | Maximum number of active verification methods a DID Document can have at the same time. | 50 |
+| `MAX_VERIFICATION_METHOD_NUMBER` | Maximum number of active keys a DID can have at the same time. Note that this includes keys with `usage` `MASTER_KEY` and `REVOCATION_KEY` | 50 |
 | `SECP256K1_CURVE_NAME` | String identifier for the SECP256K1 eliptic curve | "secp256k1" |
 | `ED25519_CURVE_NAME` | String identifier for the ED25519 eliptic curve | "ed25519" |
 | `X25519_CURVE_NAME` | String identifier for the Curve25519 eliptic curve | "x25519" |
@@ -167,7 +167,7 @@ At a high level, the protocol that defines the `prism` DID method works as follo
 - Users can update the DID documents associated to their DIDs. To do this, they need to publish respective update operations on-chain. This again requires interaction with a `PRISM node`
 - Deactivation of a DID can be performed in the same lines of updates, but publishing a deactivation operation
 - `PRISM nodes` read the operations published on-chain, and maintain internally the map of DIDs to the history of changes of their associated DID documents.
-- Any client can query any `PRISM node` and obtain the historical information of changes for a DID
+- Any client can query any `PRISM node` and obtain information (state) associated to a DID
 - DID resolvers, can take the output of `PRISM nodes` and construct the current DID document associated to a DID
 
 An additional consideration is that operations can be posted on-chain in blocks, helping on the scalability side and general reduction of fees.
