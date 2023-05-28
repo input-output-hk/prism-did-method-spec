@@ -329,9 +329,10 @@ Below we see the rules to construct a well-formed `CreateDIDOperation`, these ru
       - The strings constructing the value in `type` SHOULD be registered in the DID Specification Registries [DID-SPEC-REGISTRIES](https://www.w3.org/TR/did-spec-registries/)
       - To be more precise, the `type` value MUST conform the following ABNF rule
             
-              type-value  = type-string / "[" *(type-string ",") type-string "]"
-              type-string = type-char *(*SP type-char)
-              type-char   = ALPHA / DIGIT / "-" / "_"
+              type-value         = type-string / "[" *(quoted-type-string ",") quoted-type-string "]"
+              quoted-type-string = DQUOTE type-string DQUOTE
+              type-string        = type-char *(*SP type-char)
+              type-char          = ALPHA / DIGIT / "-" / "_"
     - The `id` field MUST be a valid [fragment](https://www.rfc-editor.org/rfc/rfc3986#section-3.5) string in accordance to [DID URL syntax](https://www.w3.org/TR/did-core/#did-url-syntax). The `id` MUST not exceed `MAX_ID_SIZE` characters in length.
     - The `service_endpoint` field MUST contain one of:
        - a URI 
