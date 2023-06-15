@@ -35,8 +35,8 @@ This document describes the first version of the `prism` DID method. Each versio
 | `MAX_SERVICE_NUMBER` | Maximum number of active services a DID Document can have at the same time. | 50 |
 | `MAX_VERIFICATION_METHOD_NUMBER` | Maximum number of active keys a DID can have at the same time. Note that this includes keys with `usage` `MASTER_KEY` and `REVOCATION_KEY` | 50 |
 | `SECP256K1_CURVE_NAME` | String identifier for the SECP256K1 eliptic curve | "secp256k1" |
-| `ED25519_CURVE_NAME` | String identifier for the ED25519 eliptic curve | "ed25519" |
-| `X25519_CURVE_NAME` | String identifier for the Curve25519 eliptic curve | "x25519" |
+| `ED25519_CURVE_NAME` | String identifier for the ED25519 eliptic curve | "Ed25519" |
+| `X25519_CURVE_NAME` | String identifier for the Curve25519 eliptic curve | "X25519" |
 
 `*` These values will be filled in once the mainnet deployment is confirmed.
 
