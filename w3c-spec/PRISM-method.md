@@ -122,7 +122,7 @@ The `prism` DID method allows to create fairly expressive DID documents. In this
         }
       }
     ],
-    "authenticationMethod": [
+    "authentication": [
       "did:prism:db47e78dd57d2043a7a704fbd9d186a586682110a2097ac06dbc83b35602f290#authentication0"
     ],
     "assertionMethod": [
@@ -411,7 +411,7 @@ The model for `UpdateDIDOperation`s looks as follows:
 ```protobuf
 // Specifies the necessary data to update a public DID.
 message UpdateDIDOperation {
-    bytes previous_operation_hash = 1; // The hash of the operation that created the DID.
+    bytes previous_operation_hash = 1; // The hash of the most recent operation that was used to create or update the DID.
     string id = 2; 
     repeated UpdateDIDAction actions = 3; // The actual updates to perform on the DID.
 }
@@ -492,7 +492,7 @@ In order to deactivate a DID, the controller can build an instance of `Deactivat
 
 ```protobuf
 message DeactivateDIDOperation {
-    bytes previous_operation_hash = 1; // The hash of the operation that created the DID.
+    bytes previous_operation_hash = 1; // The hash of the most recent operation that was used to create or update the DID.
     string id = 2; // DID method-specific identifier of the DID to be deactivated
 }
 ```
@@ -1099,7 +1099,7 @@ message UpdateDIDAction {
 
 // Specifies the necessary data to update a public DID.
 message UpdateDIDOperation {
-    bytes previous_operation_hash = 1; // The hash of the operation that issued the DID.
+    bytes previous_operation_hash = 1; // The hash of the most recent operation that was used to create or update the DID.
     string id = 2; // @exclude TODO: To be redefined after we start using this operation.
     repeated UpdateDIDAction actions = 3; // The actual updates to perform on the DID.
 }
@@ -1131,7 +1131,7 @@ message ProtocolVersionInfo {
 }
 
 message DeactivateDIDOperation {
-    bytes previous_operation_hash = 1; // The hash of the operation that issued the DID.
+    bytes previous_operation_hash = 1; // The hash of the most recent operation that was used to create or update the DID.
     string id = 2; // DID Suffix of the DID to be deactivated
 }
 
