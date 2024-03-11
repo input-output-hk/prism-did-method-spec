@@ -13,6 +13,8 @@ The `prism` DID method defines data models and protocol rules to create, manage,
 
 The method is defined as a protocol, that describes operations, serialization formats, and rules. The protocol describes how to manage the lifecycle of DIDs and their associated DID documents. We will use the term `PRISM node` to refer to software that implements the protocol defined in this document.
 
+We would like to remark that, any reference to the blockchain such as, "Cardano network", "underlying chain", "on-chain", "ledger", "the blockchain" and similar ones throughout this document refer to **Cardano mainnet** unless explicitly said otherwise. The `prism` DID method, in its current form, solely depends on and uses Cardano mainnet.
+
 ## Versioning and protocol parameters
 
 This document describes the first version of the `prism` DID method. Each version of the protocol defines certain parameters such as hashing algorithms, encoding functions, size limits for data, and others. Each version MAY make changes to these set of parameters. For this version, considered the first one, the protocol parameters are the following:
