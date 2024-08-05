@@ -917,6 +917,10 @@ In order to avoid these type of situations, we suggest the following recommendat
 The owner of `SYSTEM_UPDATE_DID` should take the appropriate measures to protect such DID. 
 These is, to protect the cryptographic keys that control the said DID. Some possible measures can include applying threshold techniques, which allow the decomposition of cryptographic secrets into pieces, which could be stored by separate actors. The reconstruction of the secrets could be done with access to a subset of all the initial pieces. 
 
+#### Rollbacks 
+
+The PRISM DID method, in practice, assumes that the underlying blockchain won't present a rollback that could affect operations once they have been processed. We would like to share some perspective to the implication of the `SECURE_DEPTH` value in the context of Cardano. According to the [Ouroboros Praos](https://eprint.iacr.org/2017/573.pdf) protocol, the current selection for `SECURE_DEPTH` implies that an attacker controlling ten percent of the total staked ADA of the Cardano network, would have a probability below 0.01 to rollback a block with `SECURE_DEPTH` depth or higher. This is, an attacker would need (at the time of this writing) to control around 2 billion ADA to have at best that probability to succeed on forcing a rollback for operations already processed by a PRISM node. The economic value of that amount of ADA reflects the resources required to perform a potential attack based on rollbacks. 
+
 ## Privacy Considerations
 
 As most DID methods, it is recommended to users to not add personal identifiable information in their DID documents. This includes:
