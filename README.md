@@ -6,3 +6,6 @@ This repository holds the [specification of the `prism` DID method](https://gith
 
 The `prism` DID method is in constant evolution, and future versions are under development. It is recommended to any implementer to follow the evolution of the new versions closely to understand, comment on, and/or suggest future changes via issues and PRs.
 
+### Extensions
+
+The `prism` DID method serves as a building block for other protocols and applications. Refer to the [extensions folder](https://github.com/input-output-hk/prism-did-method-spec/tree/main/extensions) to find related specifications that build upon this DID method.
